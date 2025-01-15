@@ -1,0 +1,3 @@
+This folder features running differentiable simulations with different initial guesses (ensemble methods) to estimate the kinetic and thermodynamic constants from experimental steady state currents. 
+This programs are recommended to be run on a cluster with at least 400 GB of memory 
+The training results for all epochs are stored in the TrainingLog files for future analysis 
