@@ -1,3 +1,4 @@
 This folder features running differentiable simulations with different initial guesses (ensemble methods) to estimate the kinetic and thermodynamic constants from experimental steady state currents. 
-This programs are recommended to be run on a cluster with at least 400 GB of memory 
-The training results for all epochs are stored in the TrainingLog files for future analysis 
+This programs are recommended to be run on a cluster with at least 400 GB of memory. 
+The training results for all 50 trials are stored in the TrainingLog folder for future analysis. 
+The simulation program is simulation.py. DiffCEMaster and DiffCEWorker are programs to help run iterative optimization.  
