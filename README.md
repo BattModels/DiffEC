@@ -15,6 +15,7 @@ The programs are run with Python 3.11 and JAX 0.4.34.  The memory requriements f
 * Voltammetry in weakly supported media MHC kinetics: Estimating electrochemical kinetics from Marcus-Hush-Chidsey formalism with migration-diffusion mass transport described with Nernst-Planck-Poisson equations
 * Chronoamperometry of acetic acid reduction: Estimating nonlinear chemical kinetics with convergent diffusion mass transport 
 * Hydrodynamic voltammetry: Estimating kinematic viscosity with convection-diffusion mass transport. This example is available at https://colab.research.google.com/drive/1Pq3szUPe8uvd9pw-ZVAZSCmX8nQH2CSM?usp=sharing
+* Transfer coefficient from LSV on Rotating Electrode: Using differentiable electrochemistry to build a direct correlation between voltammogram and its underlying physical/chemical properties. In this example, transfer coefficient and electrochemical rate constants are identified. 
 * Mass transport in concentrated electrolytes: Estimating salt diffusivity and transference number from operando fields based on concentrated solution theory
 
 
