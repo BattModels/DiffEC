@@ -1,4 +1,4 @@
-# Differentiable mass transport in electrolytes
+# Mass transport in concentrated electrolytes
 
 This directory contains a differentiable finite volume solver for modeling mass transport in electrolytes, implemented in Python using JAX and JAXopt.
 
