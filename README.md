@@ -20,3 +20,4 @@ The programs are run with Python 3.11 and JAX 0.4.34.  The memory requriements f
 
 
 # Issue Reports
+We recommend issue reports in the Discussions channel. 
