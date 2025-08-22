@@ -1,4 +1,4 @@
-# DiffFarad
+# DiffEC
 This is a code repository in company with "Differentiable Electrochemistry: A paradigm for uncovering hidden physical phenomena in electrochemical systems" currently under consideration. 
 
 This repository features differentiable simulation of voltammetry covering diffusion, migration and convection, along with both Butler-Volmer and Marcus-Hush-Chidsey kinetics. In short, electrochemical simulations are made end-to-end differentiable for parameter estimation and optimization. 
