@@ -3,12 +3,25 @@ This is a code repository in company with "Differentiable Electrochemistry: A pa
 
 This repository features differentiable simulation of voltammetry covering diffusion, migration and convection, along with both Butler-Volmer and Marcus-Hush-Chidsey kinetics. In short, electrochemical simulations are made end-to-end differentiable for parameter estimation and optimization. 
 
-The electrochemical simulations used Finite Difference (FD) methods, and made differentiable using JAX. 
+The electrochemical simulations used Finite Difference (FD) or Finite Element (FE) methods, and made differentiable using JAX. 
 
 ![TOC](TOC.png)
 
 # Requirements 
-The programs are run with Python 3.11 and JAX 0.4.34.  The memory requriements for parameter estimations of nonlinear problems are very high. For nonlinear problems, it was run with 480 GB of memory on 6 CPU cores. For linear problem, a normal laptop with 16 GB of memory will suffice. 
+The programs are run with Python 3.11 and JAX 0.4.34.  The memory requirements for parameter estimations of nonlinear problems are very high. For nonlinear problems, it was run with 480 GB of memory on 6 CPU cores. For linear problem, a normal laptop with 16 GB of memory will suffice. 
+
+# Differentiable Simulators
+Since Differentiable Simulation is a new regime in scientific modeling, it is thus very important for beginners to learn the art of differentiable simulation and differentiable simulation in the context of electrochemistry. In here, five simulators that are fully differentiable and transferable are provided to enlighten readers the art of differentiable simulation. They five differentiable simulators are:
+
+1. Fundamental Cyclic Voltammetry Simulator. Models the simplest one-electron redox reaction. 
+2. Voltammetry in Weakly Supported Media. Extends fundamental CV with electrolyte migration effects by solving Nernst-Planck-Poisson equation. 
+3. Dissociative EC Simulator. Models coupled chemical-electrochemical mechanisms, where a species dissociates chemically before electron transfer. A <-> B+C , B+e<sup>-</sup> <-> D. 
+4. Hydrodynamic Voltammetry Simulator. Models rotating-disk electrode (RDE) experiments under convection-diffusion mass transport. 
+5. Electrochemical Adsorption/Desorption Simulator. Simulates surface-confined redox reactions and adsorption/desorption processes. The mechanism is shown below:
+![Electrochemical Adsorption/Desorption Mechanism](AdsorptionMechanism.png)
+
+Overall, these simulators cover a broad range of electrochemical phenomena (diffusion, migration, convection, and coupled reactions), and are differentiable with respect to key physicochemical parameters, enabling **gradient-based fitting, sensitivity analysis, and machine learning integration**.
+ 
 
 # Contents 
 * Voltammetry in weakly supported media BV kinetics: Estimating electrochemical kinetics from Butler-Volmer or Marcus-Hush-Chidsey formalism with migration-diffusion mass transport described with Nernst-Planck-Poisson equations
