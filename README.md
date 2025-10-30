@@ -1,7 +1,13 @@
 # DiffEC
-This is a code repository in company with "Differentiable Electrochemistry: A paradigm for uncovering hidden physical phenomena in electrochemical systems" currently under consideration. 
+This is a code repository in company with "Differentiable Electrochemistry: A paradigm for uncovering hidden physical phenomena in electrochemical systems" submitted to *ACS Energy Letters*. 
 
 This repository features differentiable simulation of voltammetry covering diffusion, migration and convection, along with both Butler-Volmer and Marcus-Hush-Chidsey kinetics. In short, electrochemical simulations are made end-to-end differentiable for parameter estimation and optimization. 
+
+The purposes of this repository are twofold:
+
+*  Introducing the art of differentiable simulations to electrochemists with abundant transferable simulators and case studies (tutorials)
+*  Applying Differentiable Electrochemistry simulations to solve bottleneck problems in Electrochemistry
+
 
 The electrochemical simulations used Finite Difference (FD) or Finite Element (FE) methods, and made differentiable using JAX. 
 
@@ -17,7 +23,7 @@ Since Differentiable Simulation is a new regime in scientific modeling, it is th
 2. Voltammetry in Weakly Supported Media. Extends fundamental CV with electrolyte migration effects by solving Nernst-Planck-Poisson equation. BV and MHC kinetics are supported. 
 3. Dissociative EC Simulator. Models coupled chemical-electrochemical mechanisms, where a species dissociates chemically before electron transfer. A <-> B+C , B+e<sup>-</sup> <-> D. 
 4. Hydrodynamic Voltammetry Simulator. Models rotating-disk electrode (RDE) experiments under convection-diffusion mass transport. 
-5. Electrochemical Adsorption/Desorption Simulator. Simulates surface-confined redox reactions and adsorption/desorption processes. The mechanism is shown below:
+5. Electrochemical Adsorption/Desorption Simulator. Simulates surface-confined redox reactions and Langmuir isotherm adsorption/desorption processes. The mechanism is shown below:
 ![Electrochemical Adsorption/Desorption Mechanism](AdsorptionMechanism.png)
 
 Overall, these simulators cover a broad range of electrochemical phenomena (diffusion, migration, convection, and coupled reactions), and are differentiable with respect to key physicochemical parameters, enabling **gradient-based fitting, sensitivity analysis, and machine learning integration**.
