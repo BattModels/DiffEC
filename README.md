@@ -1,7 +1,7 @@
 # DiffEC
 This is a code repository in company with "Differentiable Electrochemistry: A paradigm for uncovering hidden physical phenomena in electrochemical systems" submitted to *ACS Energy Letters*. 
 
-This repository features differentiable simulation of voltammetry covering diffusion, migration and convection, along with both Butler-Volmer and Marcus-Hush-Chidsey kinetics. In short, electrochemical simulations are made end-to-end differentiable for parameter estimation and optimization. 
+This repository features differentiable simulation of voltammetry covering diffusion, migration and convection, along with both Butler-Volmer and Marcus-Hush-Chidsey kinetics. These partial differential equations (PDEs) are solved with Finite Difference method (implicit Euler scheme).  In short, electrochemical simulations are made end-to-end differentiable for parameter estimation and optimization. 
 
 The purposes of this repository are twofold:
 
