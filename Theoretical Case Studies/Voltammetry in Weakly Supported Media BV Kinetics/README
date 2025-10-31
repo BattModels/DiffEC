@@ -1,0 +1,2 @@
+The simulation programs run finite difference simulation of voltammetry with NPP mass transport equation with JAX in Python. 
+Forward simulation requires a small amount of memory, and but differentiable simulation for optimization (requiring automatic differentiation) requires around 400 GB of memory due to the nonlinearity of the problem. 
