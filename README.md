@@ -5,8 +5,8 @@ This repository features differentiable simulation of voltammetry covering diffu
 
 The purposes of this repository are twofold:
 
-*  Introducing the art of differentiable simulations to electrochemists with abundant transferable simulators and case studies (tutorials)
-*  Applying Differentiable Electrochemistry simulations to solve bottleneck problems in Electrochemistry
+*  Introducing the art of differentiable simulations to electrochemists with abundant **transferable simulators** and case studies (tutorials)
+*  Applying Differentiable Electrochemistry simulations to solve **bottleneck problems in electrochemistry**
 
 
 The electrochemical simulations used Finite Difference (FD) or Finite Element (FE) methods, and made differentiable using JAX. 
