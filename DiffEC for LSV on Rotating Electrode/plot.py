@@ -3,6 +3,7 @@ import pandas as pd
 import numpy as np 
 from helper import interp1DExperiment
 
+
 def to_dimensionless_flux(j,freq=2500/60,D=9.311e-9,nu=1e-6,c_bulk=1e3,F=96485):
     """j:Flux Density, A/m^2
 	c^*A: Bulk Concentration of Analyte 
@@ -33,7 +34,7 @@ def to_dimensional_potential(theta,E0f=0.0,R=8.314,T=298,F=96485):
 scan_rate = 2e-3 # V/s 
 freq = 2500 #rpm
 
-df = pd.read_csv('Default Dataset.csv')
+df = pd.read_csv('KoperData.csv')
 
 df.iloc[:,1] = df.iloc[:,1]* 10 # Convert mA/cm^2 to A/m^2
 df = df.iloc[::-1]
@@ -61,7 +62,7 @@ df.to_csv('KoperExperimentDimensionless.csv',index=False,)
 
 fig,ax = plt.subplots(figsize=(8,4.5))
 #ax.plot(Koper_Theta,Koper_Flux,color='k',lw=2.5,alpha=0.4,label='Koper Data')
-ax.plot(Koper_Theta[:1398],Koper_Flux[:1398],lw=2.5,color='k',label='LSV for Diff. EC.',ls='--',alpha=0.8)
+ax.plot(Koper_Theta,Koper_Flux,lw=2.5,color='k',label='LSV for Diff. EC.',ls='--',alpha=0.8)
 
 
 ax.set_xlabel(r'Dimensionless Potential, $\theta$',fontsize='large',fontweight='bold')

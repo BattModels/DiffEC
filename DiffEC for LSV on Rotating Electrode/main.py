@@ -54,13 +54,12 @@ def update_d_Nernst(conc_grid,Theta,bulk_conc=1.0):
     return conc_d_grid
 """
 
-def update_d_BV(conc_grid,Theta,K0,alpha,beta,deltaY,bulk_conc=1.0):
+def update_d_BV(conc_grid,Theta,K0,alpha,deltaY,bulk_conc=1.0):
     Kred = K0*jnp.exp(-alpha*Theta)
-    Kox = K0*jnp.exp(beta*Theta)
 
 
     conc_d_grid = jnp.copy(conc_grid)
-    conc_d_grid = conc_d_grid.at[0].set(deltaY*Kox)
+    conc_d_grid = conc_d_grid.at[0].set(0.0)
     conc_d_grid = conc_d_grid.at[-1].set(bulk_conc)
     return conc_d_grid
 
@@ -68,18 +67,14 @@ def calcFlux(conc_grid,Y_grid):
     flux = - (conc_grid[1]-conc_grid[0])/(Y_grid[1] - Y_grid[0])
     return flux
 
-def calcBVFlux(conc_grid,Kred,Kox):
-    #print(conc_grid[0]*Kred)
-    #print((1.0-conc_grid[0])*Kox)
-    #input()
-    flux_BV = - (conc_grid[0]*Kred - ((1.0-conc_grid[0])*Kox))
+def calcBVFlux(conc_grid,Kred):
+    flux_BV = - (conc_grid[0]*Kred)
     return flux_BV
 
 
-def Acalc_abc(A_matrix,Theta,K0,alpha,beta,Y_grid,W_grid,n,deltaT,deltaY):
+def Acalc_abc(A_matrix,Theta,K0,alpha,Y_grid,W_grid,n,deltaT,deltaY):
 
     Kred = K0*jnp.exp(-alpha*Theta)
-    Kox = K0*jnp.exp(beta*Theta)
 
 
     Arow = []
@@ -88,7 +83,7 @@ def Acalc_abc(A_matrix,Theta,K0,alpha,beta,Y_grid,W_grid,n,deltaT,deltaY):
 
     Arow.append(0)
     Acol.append(0)
-    Aval.append(1.0 + deltaY*Kred+deltaY*Kox)
+    Aval.append(1.0 + deltaY*Kred)
 
     Arow.append(0)
     Acol.append(1)
@@ -119,10 +114,9 @@ def Acalc_abc(A_matrix,Theta,K0,alpha,beta,Y_grid,W_grid,n,deltaT,deltaY):
     return A_matrix
 
 
-def modA_abc(A_matrix,Theta,K0,alpha,beta,deltaY):
+def modA_abc(A_matrix,Theta,K0,alpha,deltaY):
 
     Kred = K0*jnp.exp(-alpha*Theta)
-    Kox =K0*jnp.exp(beta*Theta)
 
 
     Arow = []
@@ -131,7 +125,7 @@ def modA_abc(A_matrix,Theta,K0,alpha,beta,deltaY):
 
     Arow.append(0)
     Acol.append(0)
-    Aval.append(1.0 + deltaY*Kred+deltaY*Kox)
+    Aval.append(1.0 + deltaY*Kred)
 
     Arow.append(0)
     Acol.append(1)
@@ -142,10 +136,9 @@ def modA_abc(A_matrix,Theta,K0,alpha,beta,deltaY):
     return A_matrix
 
 #@jax.jit
-def update(Theta,K0,alpha,beta,A_matrix,conc_grid,conc_d_grid,Y_grid,deltaY):
+def update(Theta,K0,alpha,A_matrix,conc_grid,conc_d_grid,Y_grid,deltaY):
     
     Kred = K0*jnp.exp(-alpha*Theta)
-    Kox = K0*jnp.exp(beta*Theta)
 
 
     conc_grid = linalg.solve(A_matrix,conc_d_grid)
@@ -154,14 +147,14 @@ def update(Theta,K0,alpha,beta,A_matrix,conc_grid,conc_d_grid,Y_grid,deltaY):
 
     flux = calcFlux(conc_grid,Y_grid)
 
-    flux_BV = calcBVFlux(conc_grid,Kred,Kox)
+    flux_BV = calcBVFlux(conc_grid,Kred)
 
     return A_matrix,conc_grid,conc_d_grid,Y_grid,flux,flux_BV
 
 
 
 
-def simulation(sigma,K0,alpha,beta,theta_i,theta_v,CV_location=None,save_voltammogram=False):
+def simulation(sigma,K0,alpha,theta_i,theta_v,CV_location=None,save_voltammogram=False):
     #start and end potential of voltammetric scan
 
 
@@ -186,13 +179,13 @@ def simulation(sigma,K0,alpha,beta,theta_i,theta_v,CV_location=None,save_voltamm
     
     #simulation steps
     nTimeSteps = int(np.fabs(theta_v-theta_i)/deltaTheta)
-    Esteps = np.arange(nTimeSteps)
+    Esteps = jnp.arange(nTimeSteps)
     E = theta_i-deltaTheta*Esteps
 
     start_time = time.time()
 
-    A_matrix = Acalc_abc(A_matrix,theta_i,K0,alpha,beta,Y_grid,W_grid,n,deltaT,deltaY)
-    conc_d_grid = update_d_BV(conc_grid,theta_i,K0,alpha,beta,deltaY)
+    A_matrix = Acalc_abc(A_matrix,theta_i,K0,alpha,Y_grid,W_grid,n,deltaT,deltaY)
+    conc_d_grid = update_d_BV(conc_grid,theta_i,K0,alpha,deltaY)
 
     fluxes = []
     fluxes_BV = []
@@ -200,9 +193,9 @@ def simulation(sigma,K0,alpha,beta,theta_i,theta_v,CV_location=None,save_voltamm
 
         Theta = E[index]
 
-        A_matrix = modA_abc(A_matrix,Theta,K0,alpha,beta,deltaY)
-        conc_d_grid = update_d_BV(conc_grid,Theta,K0,alpha,beta,deltaY)
-        A_matrix,conc_grid,conc_d_grid,Y_grid,flux,flux_BV  = update(Theta,K0,alpha,beta,A_matrix,conc_grid,conc_d_grid,Y_grid,deltaY)
+        A_matrix = modA_abc(A_matrix,Theta,K0,alpha,deltaY)
+        conc_d_grid = update_d_BV(conc_grid,Theta,K0,alpha,deltaY)
+        A_matrix,conc_grid,conc_d_grid,Y_grid,flux,flux_BV  = update(Theta,K0,alpha,A_matrix,conc_grid,conc_d_grid,Y_grid,deltaY)
 
         #print(Theta,conc_grid[0],conc_grid[1],conc_grid[-2],conc_grid[-1])
 
@@ -223,31 +216,11 @@ def simulation(sigma,K0,alpha,beta,theta_i,theta_v,CV_location=None,save_voltamm
         df = pd.DataFrame({'Potential':E,'Flux':fluxes})
         df.to_csv(f'{CV_location}.csv',index=False)
 
-    return jnp.array(fluxes)
+    return E,jnp.array(fluxes)
     
 
 
 
 if __name__ =="__main__":
-    """
-    for sigma in [0.001,0.01,0.1,0.5,1,10,30,100,1000]:
-        fluxes = simulation(sigma)
-    """
-
-    ground_truth_nu = 1e-6# m^2s^-1
-    rot_freq =  20 # Hz
-    omega = rot_freq*np.pi*2 #Rad/second
-    D = 1e-9 #m^2s^-1
-    scan_rate = 1e-3 # V/s
-    ground_truth_sigma = calcSigma(omega=omega,nu=ground_truth_nu,D=D,scan_rate=scan_rate)
-    
-    for K0 in [1e-1]:
-        for alpha in [0.45]:
-            for beta in [0.40]:
-                saving_directory = f"ExperimentalCV"
-                if not os.path.exists(saving_directory):
-                    os.mkdir(saving_directory)
-                CV_location  = f'{saving_directory}/rot_freq={rot_freq:.2E} nu={ground_truth_nu:.2E} sigma={ground_truth_sigma:.2E} K0={K0:.2E} alpha={alpha:.2E} beta={beta:.2E}'
-
-                simulation(ground_truth_sigma,K0=K0,alpha=alpha,beta=beta, CV_location = CV_location,save_voltammogram=True)
+    pass
 
