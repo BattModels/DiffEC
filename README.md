@@ -13,6 +13,13 @@ The electrochemical simulations used Finite Difference (FD) or Finite Element (F
 
 ![TOC](TOC.png)
 
+
+A worflow of formulating a Differentiable Electrochemistry simulator and performing computation on large clusters. To enable ensemble prediction, there are multiple DiffECManager running in parallel. Each DiffEC manager initiates a sequence of N DiffECWorker for N epochs of optimization. A Slurm workload manager is used to coordinate compute. A graphical illustration is shown below:
+
+![DiffECWorkflow](DiffECWorkflow.png)
+
+
+
 # Requirements 
 The programs are run with Python 3.11 and JAX 0.4.34.  The memory requirements for parameter estimations of nonlinear problems are very high. For nonlinear problems, it was run with 480 GB of memory on 6 CPU cores. For linear problem, a normal laptop with 16 GB of memory will suffice. 
 
