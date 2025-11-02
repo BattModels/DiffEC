@@ -97,8 +97,8 @@ for i in range(2):
         # Only set ylabel on the leftmost column
         if j == 0:
             ax[i, j].set_ylabel(r"$v^\prime$ (nm/s)")
-        # Only set xlabel on the bottom row
-        if i == 1:
+        # Only set xlabel on the bottom row and the last column on the top row
+        if i == 1 or (i == 0 and j == 2):
             ax[i, j].set_xlabel(r"$t$ (h)")
 
 # Hide the unused subplot in second row, last column
