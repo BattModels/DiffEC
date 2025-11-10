@@ -1,7 +1,7 @@
 # DiffEC
 This is a code repository in company with "Differentiable Electrochemistry: A paradigm for uncovering hidden physical phenomena in electrochemical systems" submitted to *ACS Energy Letters*. 
 
-This repository features differentiable simulation of voltammetry covering diffusion, migration and convection, along with both Butler-Volmer and Marcus-Hush-Chidsey kinetics. These partial differential equations (PDEs) are solved with Finite Difference method (implicit Euler scheme).  In short, electrochemical simulations are made end-to-end differentiable for parameter estimation and optimization. 
+This repository features differentiable simulation of voltammetry covering diffusion, migration and convection, along with both Butler-Volmer and Marcus-Hush-Chidsey kinetics. These partial differential equations (PDEs) are solved with mostly Finite Difference method (implicit Euler scheme) or Finite Element method.  In short, electrochemical simulations are made end-to-end differentiable for parameter estimation and optimization. 
 
 The purposes of this repository are twofold:
 
@@ -21,7 +21,11 @@ A worflow of formulating a Differentiable Electrochemistry simulator and perform
 
 
 # Requirements 
-The programs are run with Python 3.11 and JAX 0.4.34.  The memory requirements for parameter estimations of nonlinear problems are very high. For nonlinear problems, it was run with 480 GB of memory on 6 CPU cores. For linear problem, a normal laptop with 16 GB of memory will suffice. 
+## Software Requirements 
+Python 3.11 and JAX 0.4.34
+
+## Hardware Requirements 
+Hardware requirements varies in the forward vs. reverse mode. If simulations are performed only in the forward mode, the memory requirement is similar to conventional simulator (a few Gigabytes would suffice). On the contrary, if simulations are performed in the reverse mode for gradient computation, the memory requirement scales with the space and time steps during the simulation. For nonlinear and linear problems, ~80 or 10 GB is recommended.  
 
 # Differentiable Simulators
 Since Differentiable Simulation is a new regime in scientific modeling, it is thus very important for beginners to learn the art of differentiable simulation and differentiable simulation in the context of electrochemistry. In here, five simulators that are fully differentiable and transferable are provided to enlighten readers the art of differentiable simulation. They five differentiable simulators are:
