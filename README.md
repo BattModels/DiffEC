@@ -46,7 +46,7 @@ Overall, these simulators cover a broad range of electrochemical phenomena (diff
 * **Chronoamperometry of acetic acid reduction** Estimating nonlinear chemical kinetics with convergent diffusion mass transport 
 * **Differentiable Electrochemistry for voltammetry of adsorbed species** A total of 10 parameters are discovered simultaneously with gradient-based optimization! 
 * **Hydrodynamic voltammetry** Estimating kinematic viscosity with convection-diffusion mass transport. This example is available at https://colab.research.google.com/drive/1Pq3szUPe8uvd9pw-ZVAZSCmX8nQH2CSM?usp=sharing
-* **Adsorption/Desorption** Simultaneously discover **10** parameters from a set of voltammograms. 
+* **Adsorption/Desorption** Simultaneously discover **10** parameters from a set of voltammograms. This example is featured in the *DiffEC Adsorption* folder in the main directory. 
 
 
 
