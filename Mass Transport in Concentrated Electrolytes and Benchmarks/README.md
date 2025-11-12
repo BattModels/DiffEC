@@ -3,6 +3,9 @@
 This directory contains a differentiable finite volume solver for modeling mass transport in electrolytes, implemented in Python using JAX and JAXopt. The solver is designed to optimize parameters related to electrolyte transport properties (diffusion coefficients and transference number) by fitting simulation results to experimental data.
 
 
+The figure below provides a graphical overview of this project. (a) A schematic of the Li symmertic cell and the moving electrolyte frame because of stripping of anode/electrodeposition of cathode. (b) The predicted and experimental concentration profiles at different time. (c) The predicted and experimental transference number and diffusion coefficients at different concentration of electrolyte. Note that the transference number is negative at at a highly concentrated electrolyte (>2M). (d) The predicted velocity profile and in comparison with experiment.
+
+![LiSymmetric](LiSymmetric.png)
 
 ## Requirements
 
@@ -44,6 +47,12 @@ To visualize the simulation results stored in the `results/` directory, run:
 ```bash
 python plot.py
 ```
+
+## Results
+A sample training trajectory is shown in the figure below. Because of the efficiency of Differentiable Electrochemistry simulation, the optimization converged within 12 iterations. 
+
+![parameter_and_loss_history](parameter_and_loss_history.png)]
+
 
 
 
