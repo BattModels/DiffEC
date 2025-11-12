@@ -58,6 +58,8 @@ plt.close()
 # Load experimental data
 c_data = load_c_data()
 
+time_points = [20,151,314,412,511,609,707,871,1100]
+
 fig, ax = plt.subplots(3, 3, figsize=(9, 9))
 for i in range(3):
     for j in range(3):
@@ -73,6 +75,9 @@ for i in range(3):
         # Only set xlabel on the bottom row
         if i == 2:
             ax[i, j].set_xlabel(r"$x$ (mm)", fontsize='large',fontweight='bold')
+
+
+        ax[i,j].text(0.5,2.5,s=f"t={time_points[i*3+j]:.0f} mins")
 plt.tight_layout()
 fig.savefig('concentration_comparison.png', bbox_inches='tight', dpi=250)
 
@@ -85,6 +90,9 @@ v_interface = -i_func(t * 3600) / Faraday * MLi / rho_Li
 
 num_steps = len(t)
 fig, ax = plt.subplots(2, 3, figsize=(12, 8))
+
+spatial_coordinates = [0.95,1.30,1.65,2.0,2.35]
+
 for i in range(2):
     for j in range(3):
         if i*3+j >= len(vel_data):  
@@ -100,6 +108,8 @@ for i in range(2):
         # Only set xlabel on the bottom row and the last column on the top row
         if i == 1 or (i == 0 and j == 2):
             ax[i, j].set_xlabel(r"$t$ (h)")
+
+        ax[i,j].text(5,10,s=f'x={spatial_coordinates[2*i+j]} mm')
 
 # Hide the unused subplot in second row, last column
 fig.delaxes(ax[1, 2])  # Deletes the last axis

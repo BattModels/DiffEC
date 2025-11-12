@@ -24,8 +24,14 @@ A worflow of formulating a Differentiable Electrochemistry simulator and perform
 ## Software Requirements 
 Python 3.11 and JAX 0.4.34
 
+It's also very important to enable float64 for JAX to enable high precision computing. float32 by default will not work for some cases. 
+
+
+```jax.config.update("jax_enable_x64", True)```
+
+
 ## Hardware Requirements 
-Hardware requirements varies in the forward vs. reverse mode. If simulations are performed only in the forward mode, the memory requirement is similar to conventional simulator (a few Gigabytes would suffice). On the contrary, if simulations are performed in the reverse mode for gradient computation, the memory requirement scales with the space and time steps during the simulation. For nonlinear and linear problems, ~80 or 10 GB is recommended.  
+Hardware requirements varies in the forward vs. reverse mode. If simulations are performed only in the forward mode, the memory requirement is similar to conventional simulator (a few Gigabytes would suffice). On the contrary, if simulations are performed in the reverse mode for gradient computation, the memory requirement scales with the space and time steps during the simulation. For nonlinear or linear problems, ~80 or 10 GB is recommended.  
 
 # Differentiable Simulators
 Since Differentiable Simulation is a new regime in scientific modeling, it is thus very important for beginners to learn the art of differentiable simulation and differentiable simulation in the context of electrochemistry. In here, five simulators that are fully differentiable and transferable are provided to enlighten readers the art of differentiable simulation. They five differentiable simulators are:
