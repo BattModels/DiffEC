@@ -67,3 +67,6 @@ Overall, these simulators cover a broad range of electrochemical phenomena (diff
 
 # Issue Reports
 We recommend issue reports in the Discussions channel. 
+
+# Cite: 
+The paper is currently on [arXiv](https://arxiv.org/abs/2511.11631)
