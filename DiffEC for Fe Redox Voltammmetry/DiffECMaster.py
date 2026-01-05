@@ -27,7 +27,7 @@ if not os.path.exists("./opt_state_folder"):
     os.mkdir("./opt_state_folder")
 
 if not os.path.exists("./Figures"):
-    os.mkdir("")
+    os.mkdir("./Figures")
 
 
 

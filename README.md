@@ -33,6 +33,17 @@ In the Python script, and after JAX import,
 ## Hardware Requirements 
 Hardware requirements varies in the forward vs. reverse mode. If simulations are performed only in the forward mode, the memory requirement is similar to conventional simulator (a few Gigabytes would suffice). On the contrary, if simulations are performed in the reverse mode for gradient computation, the memory requirement scales with the space and time steps during the simulation. For nonlinear or linear problems, ~80 or 10 GB is recommended.  
 
+
+# Tutorials
+To enable users to jump-start Differentiable Electrochemistry simulator and learn how to make an electrochemical simulator differentiable, we have developed the tutorial notebook (tutorial.ipynb) to offer a step-by-step guide on how to use JAX, and how to implement a differentiable simulator with JAX. The tutorials have the following sections. 
+
+1. Automatic Differentiation for Linear Regression with JAX
+2. Differentiable simulation for electrochemical kinetics
+3. Implementing a differentiable finite-difference simulator. Note that a conventional simulator implemented using JAX is also provided for "side-by-side" comparison. 
+4. Differentiable simulator and parameter estimation for Fe Redox Voltammetry. This section offers a "production" example on how to perform DiffEC on real experimental data.
+
+
+
 # Differentiable Simulators
 Since Differentiable Simulation is a new regime in scientific modeling, it is thus very important for beginners to learn the art of differentiable simulation and differentiable simulation in the context of electrochemistry. In here, five simulators that are fully differentiable and transferable are provided to enlighten readers the art of differentiable simulation. They five differentiable simulators are:
 
