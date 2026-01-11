@@ -37,5 +37,15 @@ The final result, from ensemble prediction of 30 guesses, are shown in the paper
 
 
 
+## Directory Structure 
+- **KoperData.csv** The linear sweep voltammogram reported in *ACS Energy Lett. 2020, 5, 3, 701–709* for HER in acidic media 
+- **plot.py** Plot the experimental LSV above and convert to dimensionless form as **KoperExperimentDimensionless.csv**
+- **SimulationHyperparameters.py** Contains simulation parameters including epochs, learning rates, optimizer etc. 
+- **main.py** Contains the simulation script for hydrodynamic voltammetry
+- **history_folder** Contains the optimization trajectory.
+
+
+
+
 
 
