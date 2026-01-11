@@ -26,3 +26,20 @@ After sucessfully running all simulation tasks, the ensemble results are shown b
 ![DiffECFeRedoxResult](DiffECFeRedoxResult.png)
 
 
+## Directory Sturcture 
+
+- **5 mM Fe(3) 1 M H2SO4 on PtE.xlsx** The experimental data of voltammetry of 5 mM Fe(III) solution in 1 M H2SO4 on Pt Electrode. 
+- **ConvertToDimensionless.py** The python file the converts the dimensional voltammograms (5 mM Fe(3) 1 M H2SO4 on PtE.xlsx) and saves into the **ExpData/** folder
+- **ExpData/** The folder containing the dimensionless experimental data for DiffEC optimization 
+- **JAX_FD_Simulation_Unequal_D/** The folder contianing the script of the differentiable voltammetry solver. 
+- **DiffECMaster.py** and **DiffECWorker.py** A diffEC master is an optimization thread, and a DiffEC worker performs one round of diffEC optimization, involving simulation, backpropagation, and optimization. 
+- **submit_cpu_master.sh** Schedules *N* **DiffECMaster.py** jobs for ensemble prediction. For each **DiffECMaster.py** job, it calls **submit_cpu_worker.sh**
+- **submit_cpu_worker.sh** Schedules **DiffECWorker.py** repeeatedly. 
+- **history_folder/** stores DiffEC optimization trajectories as json file. One trajectory is given here. 
+
+## Usage
+
+To initiate the Differentiable Electrochemistry workflow, on your cluster, simply run the following script (with appropriate setup like cluster name etc.):
+```bash
+sbatch submit_cpu_master.sh
+```

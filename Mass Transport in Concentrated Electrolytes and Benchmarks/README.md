@@ -51,7 +51,7 @@ python plot.py
 ## Results
 A sample training trajectory is shown in the figure below. Because of the efficiency of Differentiable Electrochemistry simulation, the optimization converged within 12 iterations. 
 
-![parameter_and_loss_history](parameter_and_loss_history.png)]
+![parameter_and_loss_history](parameter_and_loss_history.png)
 
 
 
