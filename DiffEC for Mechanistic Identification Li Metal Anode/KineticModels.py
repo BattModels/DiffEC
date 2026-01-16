@@ -14,16 +14,18 @@ df = pd.read_csv("Boyle Figure 4a.csv",skiprows=1)
 
 
 def BV_current(j0,alpha,eta):
+    """Bulter-Volmer Kinetics"""
     j_BV = j0*(jnp.exp(-alpha*F/(R*T)*eta) - jnp.exp((1.0-alpha)*F/(R*T)*eta))
     return jnp.abs(j_BV)
 
 
 def MH_current(j0,reorg_e,eta):
     """
+    Marcus-Hush Kinetics. 
     eta: Overpotential. Volt
     reorg_e: Reorganization energy in eV. 
     """
-    alpha = 0.5 + eta/(4*reorg_e)
+    alpha = 0.5 + eta/(4*reorg_e) #Potential dependent transfer coefficient 
     j_MH = j0*(jnp.exp(-alpha*F/(R*T)*eta)) - j0*jnp.exp((1.0-alpha)*F/(R*T)*eta)
 
     return jnp.abs(j_MH)
@@ -31,6 +33,7 @@ def MH_current(j0,reorg_e,eta):
 
 def MHC_current(j0,reorg_e,eta):
     """
+    Marcus-Hush-Chidsey kinetics. Normalized at overpotential = 0. Fully differentiabl with GaussHermite polynomial. 
     eta: Overpotential. Volt
     reorg_e: Reorganization energy in eV. 
     """
@@ -52,8 +55,8 @@ def MHC_current(j0,reorg_e,eta):
         return jnp.sum(weights*y)
     
     #j_MHC = j0*MHIntegrand_Red(theta=theta,Lambda=Lambda) - j0*MHIntegrand_Ox(theta=theta,Lambda=Lambda)
-    kred = jax.vmap(MHIntegrand_Red)(theta)/MHIntegrand_Red(0.0)
-    kox =  jax.vmap(MHIntegrand_Ox)(theta)/MHIntegrand_Ox(0.0)
+    kred = jax.vmap(MHIntegrand_Red)(theta)/MHIntegrand_Red(0.0) #Normalization at zero overpotential 
+    kox =  jax.vmap(MHIntegrand_Ox)(theta)/MHIntegrand_Ox(0.0) # Normalization at zero overpotential 
 
     j_MHC = j0*(kred-kox)
 
@@ -61,13 +64,13 @@ def MHC_current(j0,reorg_e,eta):
 
 def MHC_current_approx(j0,reorg_e,eta):
     """
+    The approximated Marcus-Hush-Chidsey kinetics. It is not normalized, so j0 will be different from MHC kinetics. 
     eta: Overpotential. Volt
     reorg_e: Reorganization energy in eV. 
     Journal of Electroanalytical Chemistry, Volume 735, 1 December 2014, Pages 77-83
     """
     theta = eta*(F/(R*T)) #Dimensionless potential 
     Lambda = reorg_e*(F/(R*T)) # Dimensionless reorganization energy
-    #j_0_ref = jnp.sqrt(jnp.pi*Lambda)*jax.scipy.special.erfc((Lambda - jnp.sqrt(1.0+jnp.sqrt(Lambda)+0.0**2))/(2*jnp.sqrt(Lambda)))
     j_MHC = j0*jnp.sqrt(jnp.pi*Lambda)*jnp.tanh(theta/2.0)*jax.scipy.special.erfc((Lambda - jnp.sqrt(1.0+jnp.sqrt(Lambda)+theta**2))/(2*jnp.sqrt(Lambda)))
 
     j_MHC = j_MHC
