@@ -35,7 +35,7 @@ Hardware requirements varies in the forward vs. reverse mode. If simulations are
 
 
 # Tutorials
-To enable users to jump-start Differentiable Electrochemistry simulator and learn how to make an electrochemical simulator differentiable, we have developed the tutorial notebook (tutorial.ipynb) to offer a step-by-step guide on how to use JAX, and how to implement a differentiable simulator with JAX. The tutorials have the following sections. 
+To enable users to jump-start Differentiable Electrochemistry simulator and learn how to make an electrochemical simulator differentiable, we have developed the tutorial notebook (Tutorial.ipynb) to offer a step-by-step guide on how to use JAX, and how to implement a differentiable simulator with JAX. The tutorials have the following sections. 
 
 1. Automatic Differentiation for Linear Regression with JAX
 2. Differentiable simulation for electrochemical kinetics
