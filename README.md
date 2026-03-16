@@ -24,7 +24,7 @@ A worflow of formulating a Differentiable Electrochemistry simulator and perform
 ## Software Requirements 
 Python 3.11 and JAX 0.4.34
 
-It's also very important to enable float64 for JAX to enable high precision computing. float32 by default will not work for some cases. 
+It's also very important to **enable float64** for JAX to enable high precision computing. float32 by default will not work for some cases. 
 In the Python script, and after JAX import, 
 
 ```jax.config.update("jax_enable_x64", True)```
