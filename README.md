@@ -79,5 +79,5 @@ Overall, these simulators cover a broad range of electrochemical phenomena (diff
 # Issue Reports
 We recommend issue reports in the Discussions channel. 
 
-# Cite: 
-The paper is currently on preprint server. Please cite as: [ACS Energy Lett. 2026, 11, 2, 2005–2018](https://pubs.acs.org/doi/10.1021/acsenergylett.5c03761)
+# Cite
+Please cite as our published paper at [ACS Energy Lett. 2026, 11, 2, 2005–2018](https://pubs.acs.org/doi/10.1021/acsenergylett.5c03761). Thank you!
