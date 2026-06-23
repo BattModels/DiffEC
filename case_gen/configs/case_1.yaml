@@ -44,16 +44,26 @@ material:
     a: 1.123276
     b: 0.106822
     d: 0.007606
+  # Override V_bar to weaken the convective coupling: with V_bar = 5e-5
+  # instead of ~1.5e-4 (rho-derived) the moving-frame v₀ is ~3x smaller,
+  # so the lab-frame NE inversion stays within 0.05 of true tp0 at
+  # every c_grid point — robustly classifying every point as NE_valid.
+  V_bar_si: 5.0e-5            # m³/mol
   # D(c): smooth, monotone, magnitudes ~5e-7 cm^2/s. Tabulated and
   # jnp.interp'd both internally (oracle) and externally (agent receives
   # the table in params.json factor entry too, parallel structure).
   D_table_cgs:
     c_mol_per_L: [0.0, 0.1, 0.2, 0.4, 0.6, 0.8, 1.0, 1.2]
     D_cm2_per_s: [6.5e-7, 6.4e-7, 6.0e-7, 5.5e-7, 5.0e-7, 4.5e-7, 4.0e-7, 3.8e-7]
-  # t+0(c): positive everywhere, monotone-decreasing, range [0.20, 0.42].
+  # t+0(c): nearly flat at 0.30 (small monotone variation within the
+  # 0.05 NE_valid threshold). The case_1 calibration target is
+  # |t+0_oracle − t+0_NE_oracle| < 0.05 at every c_grid point. A wide
+  # true-tp0 spread can't satisfy that no matter how the agent inverts,
+  # because the lab-frame inversion sees a single noisy c_data field
+  # and tends to collapse near a representative average.
   tp0_table:
     c_mol_per_L: [0.0, 0.1, 0.2, 0.4, 0.6, 0.8, 1.0, 1.2]
-    tp0:         [0.42, 0.41, 0.40, 0.36, 0.30, 0.25, 0.21, 0.20]
+    tp0:         [0.32, 0.315, 0.31, 0.305, 0.30, 0.295, 0.29, 0.285]
 
 # --- Applied current schedule -----------------------------------------
 # Piecewise-linear i_app(t) in A/cm^2 internally; converted to A/m^2 in
@@ -66,9 +76,13 @@ current:
   ramp_down_s: 100.0
 
 # --- Reporting grids ---------------------------------------------------
+# Bounds match what the data actually visits at this current schedule
+# (polarization ~0.15 mol/L either side of c_init=0.6). c_grid points
+# outside the explored range are not recoverable from this data and
+# would just measure the agent's extrapolation prior.
 c_grid:
-  c_min: 0.2                  # mol/L
-  c_max: 1.0                  # mol/L
+  c_min: 0.45                 # mol/L
+  c_max: 0.75                 # mol/L
   n: 50
 
 flux_samples:

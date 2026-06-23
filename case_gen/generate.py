@@ -134,10 +134,18 @@ def generate_case(config_path: Path, verbose: bool = True) -> None:
     # i.e. density / molar mass of the solvent. mol/L.
     c0_pure = float(_rho(0.0, a, b, d) / M0 * 1000.0)
 
-    # Constant V_bar evaluated at c_avg.
+    # Constant V_bar. Default = evaluated at c_avg from the rho polynomial;
+    # may be overridden in YAML via ``material.V_bar_si`` (m³/mol). Override
+    # is the knob for controlling convective coupling strength: smaller
+    # V_bar shrinks v₀ and brings tp0_NE closer to tp0 (useful for
+    # case 1's NE-valid target).
     c_avg = 0.5 * (float(cfg["c_grid"]["c_min"]) + float(cfg["c_grid"]["c_max"]))
-    V_bar_scalar_cgs = V_bar_cgs_at(c_avg, a=a, b=b, d=d, M=M)
-    V_bar_scalar_si = V_bar_scalar_cgs * 1e-6  # cm³/mol → m³/mol
+    if "V_bar_si" in mat:
+        V_bar_scalar_si = float(mat["V_bar_si"])
+        V_bar_scalar_cgs = V_bar_scalar_si * 1e6
+    else:
+        V_bar_scalar_cgs = V_bar_cgs_at(c_avg, a=a, b=b, d=d, M=M)
+        V_bar_scalar_si = V_bar_scalar_cgs * 1e-6
 
     # Dense factor table (shared between agent-facing params.json and the
     # oracle solver — same tabulation everywhere keeps the agent's view

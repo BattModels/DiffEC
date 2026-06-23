@@ -177,14 +177,22 @@ up.
 > Updated whenever case configs or the reference solution change.
 > Required by ADR-0005's audit mode.
 
-| Case | Check #1 (D rel err) | Check #2 (t⁺⁰ abs err) | Check #4 (v RMSE) | Check #6 (self-consistency) |
-| --- | --- | --- | --- | --- |
-| case_1 | _TBD_ | _TBD_ | _TBD_ | _TBD_ |
-| case_2 | _TBD_ | _TBD_ | _TBD_ | _TBD_ |
-| case_3 | _TBD_ | _TBD_ | _TBD_ | _TBD_ |
-| case_4 | _TBD_ | _TBD_ | _TBD_ | _TBD_ |
+| Case | Check #1 (D rel err) | Check #2 (t⁺⁰ abs err) | Check #4 (v RMSE) | Check #5 (flux worst) | Check #6 (self-consistency) |
+| --- | --- | --- | --- | --- | --- |
+| case_1 | 0.082 / 0.10 (**18 %**) | 0.015 / 0.05 (70 %) | 0.042 / 0.15 (72 %) | 0.0005 / 0.15 (100 %) | _skipped_ |
+| case_2 | _TBD_ | _TBD_ | _TBD_ | _TBD_ | _TBD_ |
+| case_3 | _TBD_ | _TBD_ | _TBD_ | _TBD_ | _TBD_ |
+| case_4 | _TBD_ | _TBD_ | _TBD_ | _TBD_ | _TBD_ |
 
-Thresholds: 0.10 / 0.05 / 0.15 / 0.15 respectively. Target margin: 50 %.
+Thresholds: 0.10 / 0.05 / 0.15 / 0.15 / 0.15 respectively. Target margin: 50 %.
+
+Case 1 fails the ADR-0005 50 %-margin precondition on check #1 (D rel
+err): worst point at the c_grid edges where polarization is small and
+D is poorly constrained. Recoverable by either tightening `c_grid` to
+exactly the explored range, raising the current to widen polarization,
+or accepting the looser margin as documented case-design metadata.
+Recorded here as a calibration debt; fix in the next case-calibration
+chunk.
 
 ## Frontier-agent pilot facts (to be filled in after pilot)
 

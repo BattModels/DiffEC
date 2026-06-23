@@ -91,6 +91,10 @@ def invert(
     t_idx_j = jnp.asarray(t_indices, dtype=jnp.int64)
     c_grid_j = jnp.asarray(c_grid, dtype=jnp.float64)
     lam = jnp.asarray(lambda_reg, dtype=jnp.float64)
+    # Normalize the data term so lambda_reg's effect is independent of
+    # absolute c-magnitude. Matches the reference solver's lab-frame
+    # inversion for cross-implementation regime stability.
+    c_norm_sq = jnp.maximum(jnp.mean(c_data_j ** 2), 1.0)
 
     def _loss(params: jax.Array) -> jax.Array:
         def tp0_ne_fn(c: jax.Array) -> jax.Array:
@@ -100,7 +104,7 @@ def invert(
             D_fn, tp0_ne_fn, factor_fn, V_bar_fn, i_fn, case, lab_frame=True
         )
         c_sim = c_hist[t_idx_j, :]
-        data_term = jnp.mean((c_sim - c_data_j) ** 2)
+        data_term = jnp.mean((c_sim - c_data_j) ** 2) / c_norm_sq
         reg_term = jnp.sum(jnp.diff(params) ** 2)
         return data_term + lam * reg_term
 

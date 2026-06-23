@@ -176,3 +176,6 @@ cython_debug/
 
 # Running experience notebook (see CLAUDE.md)
 docs/session.md
+
+# Local reference-solver outputs from build-and-run smoke loops
+_local_results/
