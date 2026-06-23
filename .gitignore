@@ -170,3 +170,9 @@ cython_debug/
 
 # PyPI configuration file
 .pypirc
+
+# claude
+.claude/
+
+# Running experience notebook (see CLAUDE.md)
+docs/session.md
