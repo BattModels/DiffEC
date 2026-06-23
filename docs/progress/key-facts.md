@@ -105,6 +105,24 @@ instability at high `i`. Keep `dt` per case in `case_gen/configs/`.
 
 ## Optimization
 
+### NE inversion is information-limited at low current / low SNR
+
+First end-to-end smoke (2026-06-23, case_1 draft YAML) showed BFGS on
+the 50-point `tp0_NE` ansatz moved only ~0.05 from initialization
+(loss 4.01e-5 → 3.71e-5) under σ_c = 0.006 mol/L and peak `i = 4 A/m²`.
+The data fit was already at the noise floor (σ_c² = 3.6e-5), so there
+was little extra information for BFGS to extract about the *shape* of
+`tp0_NE(c)`. Consequences:
+
+- At low SNR, `tp0_NE` collapses toward the spatially-averaged init
+  value; the inversion underfits the tails.
+- For an NE-valid case, this is harmless *if* the true `tp0(c)` is
+  also nearly constant (within 0.05 of the same average). It bites
+  when the true `tp0(c)` varies more than ~0.05 across `c_grid`.
+- Calibration knobs (later, when reference solver lands): flatten true
+  `tp0(c)` shape for the easy case; or boost peak current; or reduce
+  noise σ. ADR-0005's 50%-margin audit will force one of these.
+
 ### Multi-modal basin separation in Case 4
 Case 4 is intentionally constructed so a single-start optimization
 from a uniform-`t⁺⁰` initial condition lands in a positive-`t⁺⁰` basin

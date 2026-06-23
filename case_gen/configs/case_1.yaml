@@ -1,0 +1,95 @@
+# Case 1 — NE-valid (the calibration case).
+#
+# Regime intent (docs/plan/case-design.md §"Case 1"):
+#   Weak ion-solvent correlation, t+0 > 0 everywhere, |t+0 - t+0_NE| < 0.05
+#   at every c_grid point. Lab-frame agents pass cleanly. Validates the
+#   plumbing end-to-end before the harder cases are calibrated.
+#
+# THIS YAML IS A DRAFT.
+#   Numerical values are first-cut to validate generation plumbing
+#   (oracle + case_gen + writers + verifier shape contracts). Final
+#   coefficients, noise sigmas, and parameter tables get locked once
+#   the reference solver lands and ADR-0005's 50%-margin audit is run
+#   (see docs/plan/decisions.md, docs/progress/key-facts.md).
+
+case_id: case_1
+description: "NE-valid: weak ion-solvent correlation, positive t+0 everywhere."
+seed: 12345
+
+# --- Geometry ----------------------------------------------------------
+# Internal units: cm (matches oracle/solver.py).
+geometry:
+  L_cm: 0.3       # 3 mm symmetric Li | electrolyte | Li cell
+  Nx: 100         # cell centers; faces = Nx + 1
+
+# --- Time --------------------------------------------------------------
+time:
+  T_s: 1100.0     # total polarization time
+  dt_s: 0.1       # forward-Euler step (oracle-spec.md §"Forward Euler")
+  Nt_out: 50      # uniformly subsampled reporting times (incl. t=0 and t=T)
+
+# --- Initial condition -------------------------------------------------
+initial:
+  c_init: 0.6     # mol/L, mid-range of c_grid
+
+# --- Material polynomials ---------------------------------------------
+# rho(c) coefficients from the published PEO-LiTFSI polynomial; case 1 is
+# deliberately literature-adjacent for NE-valid calibration. Cases 2-4
+# perturb per ADR-0004.
+material:
+  M0_g_per_mol: 44.05         # PEO repeat unit (solvent surrogate)
+  M_g_per_mol: 287.09         # LiTFSI = 6.94 + 280.15
+  T_temp_K: 363.15            # 90 C
+  rho_polynomial:             # rho(c) = a + b*c + d*c^2, c in mol/L, rho in g/cm^3
+    a: 1.123276
+    b: 0.106822
+    d: 0.007606
+  # D(c): smooth, monotone, magnitudes ~5e-7 cm^2/s. Tabulated and
+  # jnp.interp'd both internally (oracle) and externally (agent receives
+  # the table in params.json factor entry too, parallel structure).
+  D_table_cgs:
+    c_mol_per_L: [0.0, 0.1, 0.2, 0.4, 0.6, 0.8, 1.0, 1.2]
+    D_cm2_per_s: [6.5e-7, 6.4e-7, 6.0e-7, 5.5e-7, 5.0e-7, 4.5e-7, 4.0e-7, 3.8e-7]
+  # t+0(c): positive everywhere, monotone-decreasing, range [0.20, 0.42].
+  tp0_table:
+    c_mol_per_L: [0.0, 0.1, 0.2, 0.4, 0.6, 0.8, 1.0, 1.2]
+    tp0:         [0.42, 0.41, 0.40, 0.36, 0.30, 0.25, 0.21, 0.20]
+
+# --- Applied current schedule -----------------------------------------
+# Piecewise-linear i_app(t) in A/cm^2 internally; converted to A/m^2 in
+# params.json at the writer boundary.
+current:
+  schedule: ramp_hold_ramp
+  peak_A_per_cm2: 4.0e-4      # = 4 A/m^2
+  ramp_up_s: 100.0
+  hold_s: 900.0
+  ramp_down_s: 100.0
+
+# --- Reporting grids ---------------------------------------------------
+c_grid:
+  c_min: 0.2                  # mol/L
+  c_max: 1.0                  # mol/L
+  n: 50
+
+flux_samples:
+  # 10 deterministic (x_m, t_s) coordinates in the bulk / middle of the
+  # time window. Avoid boundary cells (numerical gradient artifacts).
+  n: 10
+  x_min_frac: 0.2
+  x_max_frac: 0.8
+  t_min_frac: 0.3
+  t_max_frac: 0.9
+
+# --- Noise model -------------------------------------------------------
+# Additive Gaussian, seeded. Calibration of these sigmas (ADR-0005) is
+# deferred until reference solver exists.
+noise:
+  c_sigma_mol_per_L: 0.006    # ~1% at c_init = 0.6
+  v_sigma_rel: 0.05           # sigma_v / max|v_sim|
+
+# --- Invert-NE parameters ---------------------------------------------
+# BFGS on the 50-point t+0_NE ansatz, holding D = D_oracle fixed.
+invert_ne:
+  lambda_reg: 1.0e-4
+  init_tp0: 0.30
+  maxiter: 200
