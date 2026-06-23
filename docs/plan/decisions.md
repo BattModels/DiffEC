@@ -236,6 +236,40 @@ between now and PR submission, we re-pin in this ADR and re-validate
 locally with the upgraded `harbor check`.
 
 
+## ADR-0011 — Lock task name as `concentrated-electrolyte-mass-transport`
+
+**Status:** Accepted (2026-06-23)
+
+**Context.** Harbor task names are kebab-case under
+`tasks/<domain>/<field>/<task-name>/`. We brainstormed three candidates
+in `harbor-task-format.md`:
+- `concentrated-electrolyte-mass-transport`
+- `diffec-mass-transport`
+- `newman-inversion-from-operando`
+
+**Decision.** `concentrated-electrolyte-mass-transport`.
+
+**Rationale.**
+- Most directly describes *what the task is about* (the physics regime),
+  not what tools solve it (`diffec-`) or what theory is invoked
+  (`newman-`). A future reader scanning `tasks/physical-sciences/chemistry/`
+  can guess the content from the directory name alone.
+- Avoids embedding a framework name (DiffEC) into a public benchmark.
+  The benchmark should outlive any specific reference implementation.
+- "Newman inversion" is jargon-precise but narrower than the task: the
+  task also covers regime classification, flux decomposition, and the
+  NE-equivalent comparison, none of which are "the Newman inversion" by
+  themselves.
+
+Full upstream path: `tasks/physical-sciences/chemistry/concentrated-electrolyte-mass-transport/`.
+
+**Consequences.** Final paths are now pinned. Replace the
+`<task-name>` placeholder in `harbor-task-format.md`, `architecture.md`,
+`build-and-run.md`, and `CLAUDE.md` with the concrete name (or leave
+the `$TASK` shorthand pointing here).
+
+---
+
 ## ADR-0008 — Frontier-agent pilot before PR submission
 
 **Status:** Accepted (2026-06-22)

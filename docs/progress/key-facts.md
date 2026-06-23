@@ -76,6 +76,27 @@ will get the boundary value wrong and silently introduce a constant
 offset to the entire velocity field. Match `solver.py`'s
 `update_solvent_vel` exactly.
 
+### Published-fit residual bounds the achievable case tolerance
+The published Steinrück-2020 fit (BFGS to convergence with the published
+2-parameter `tp0` polynomial and the `D(c) = (1-tp0)·relation_coef/factor`
+ansatz) reaches an experimental-data fit residual of **~6 % mean,
+~9 % worst-point** across the 9 sampled times × 50 cells (measured in
+`scripts/smoke_test.py`, 2026-06-23). That residual is dominated by the
+experimental noise plus the limitations of the published 2-parameter
+ansatz, *not* by any solver defect — `scripts/smoke_test.py` shows the
+solver itself reproduces the published `c_sim.npy` to ~3e-16 relative
+error (machine identity).
+
+Implications:
+- The oracle-generated cases have synthetic noise instead of
+  experimental noise; we control noise level, so the equivalent
+  fit-residual budget for case generation can be tighter than 6 %.
+- But any noise level we choose puts a *floor* on the achievable
+  `D(c)` / `t⁺⁰(c)` recovery error. ADR-0005's "50 % margin on the
+  worst point" check has to be calibrated against this floor — pick
+  noise so that the floor is well below 0.05 absolute on `t⁺⁰` and
+  5 % relative on `D`.
+
 ### Forward Euler is sufficient at the published `Δt`
 `solver.py` uses first-order explicit Euler with `dt = 0.1 s`. This is
 stable for the published parameter range and the case-generation

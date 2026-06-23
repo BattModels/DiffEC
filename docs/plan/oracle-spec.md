@@ -131,10 +131,23 @@ tabulation in `params.json` and is expected to do the same.
 
 ## 8. Smoke test
 
-Before any case is generated, `oracle/smoke_test.py` reproduces the
+Before any case is generated, `scripts/smoke_test.py` reproduces the
 published Steinrück-2020 fit by running the oracle solver with the
-published PEO-LiTFSI parameters and comparing to the bundled
-experimental `c_data` in `Mass Transport in.../data/`. Acceptance:
-max-relative error vs the published `c_data` interpolated onto the
-oracle's mesh ≤ 5 % at all 9 time points. This is the cross-check
-called out in ADR-0002.
+published PEO-LiTFSI parameters, then checks two things:
+
+- **Primary (acceptance gate).** Max-relative error vs the published
+  solver's own saved output (`results/c_sim.npy`) at all 9 sampled time
+  indices, all 50 cells: `< 1e-3`. In practice we observe `~3e-16`
+  (machine-precision identity), which says our generalized solver
+  preserves the published solver's numerics bit-for-bit. This is the
+  rigorous check called out in ADR-0002.
+- **Secondary (informative only).** Max-relative error vs the
+  experimental `c_data` interpolated onto the oracle's mesh: typical
+  values `~6 %` mean / `~9 %` worst-point. **This is the published
+  fit's own residual against experiment, not a property of the solver.**
+  We log this number for tolerance-calibration context (it bounds how
+  tight any case's `D(c)`/`t⁺⁰(c)` tolerance can sensibly be against
+  noisy data) but do not gate on it.
+
+If the primary check fails, the solver has a bug; do not generate cases
+until it passes.

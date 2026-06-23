@@ -1,0 +1,30 @@
+[project]
+name = "diffec-tb-sci-task"
+version = "0.1.0"
+description = "Dev tooling for the Terminal-Bench Science contribution: concentrated-electrolyte mass-transport inverse problem from operando profiles."
+authors = [
+    { name = "Changwen Xu", email = "changwex@umich.edu" },
+]
+requires-python = ">=3.11,<3.12"
+license = { text = "MIT" }
+
+# Hard pins on JAX/JAXopt match the published DiffEC reference implementation
+# (Mass Transport in Concentrated Electrolytes and Benchmarks/README.md). Do not
+# bump without rerunning scripts/smoke_test.py (ADR-0002).
+dependencies = [
+    "numpy>=1.26,<2.0",
+    "scipy>=1.13,<2.0",
+    "h5py>=3.11",
+    "pyyaml>=6.0",
+    "jax[cpu]>=0.4.34,<0.6",
+    "jaxopt>=0.8.4",
+    "matplotlib>=3.8",
+    "pytest>=8.0",
+    "pytest-xdist>=3.5",
+]
+
+[tool.uv]
+package = false
+
+[tool.pytest.ini_options]
+addopts = "-p no:cacheprovider"

@@ -1,0 +1,43 @@
+schema_version = "1.0"
+
+artifacts = [
+    "/root/results/case_1/transport.json",
+    "/root/results/case_2/transport.json",
+    "/root/results/case_3/transport.json",
+    "/root/results/case_4/transport.json",
+]
+
+[metadata]
+author_name = "Changwen Xu"
+author_email = "changwex@umich.edu"
+author_organization = "University of Michigan"
+# TODO(case-lock): fill the three _explanation fields once case design is locked
+difficulty_explanation = ""
+solution_explanation = ""
+verification_explanation = ""
+domain = "physical-sciences"
+field = "chemistry"
+subfield = "electrochemistry"
+tags = [
+    "electrochemistry",
+    "concentrated-electrolyte",
+    "inverse-problem",
+    "differentiable-simulation",
+    "jax",
+]
+expert_time_estimate_hours = 4.0
+
+[verifier]
+timeout_sec = 600.0
+environment_mode = "separate"
+
+[agent]
+timeout_sec = 3600.0
+
+[environment]
+build_timeout_sec = 600.0
+cpus = 8
+memory_mb = 16384
+storage_mb = 10240
+gpus = 0
+allow_internet = true
