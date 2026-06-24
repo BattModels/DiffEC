@@ -205,20 +205,20 @@ up.
 
 | Case | Check #1 (D rel err) | Check #2 (t⁺⁰ abs err) | Check #4 (v RMSE) | Check #5 (flux worst) | Check #6 (self-consistency) |
 | --- | --- | --- | --- | --- | --- |
-| case_1 | 0.082 / 0.10 (**18 %**) | 0.015 / 0.05 (70 %) | 0.042 / 0.15 (72 %) | 0.0005 / 0.15 (100 %) | 0.042 / 0.15 (72 %) |
+| case_1 | 0.043 / 0.10 (57 %) | 0.014 / 0.05 (73 %) | 0.042 / 0.15 (72 %) | 0.0005 / 0.15 (100 %) | 0.042 / 0.15 (72 %) |
 | case_2 | _TBD_ | _TBD_ | _TBD_ | _TBD_ | _TBD_ |
 | case_3 | _TBD_ | _TBD_ | _TBD_ | _TBD_ | _TBD_ |
 | case_4 | _TBD_ | _TBD_ | _TBD_ | _TBD_ | _TBD_ |
 
 Thresholds: 0.10 / 0.05 / 0.15 / 0.15 / 0.15 respectively. Target margin: 50 %.
 
-Case 1 fails the ADR-0005 50 %-margin precondition on check #1 (D rel
-err): worst point at the c_grid edges where polarization is small and
-D is poorly constrained. Recoverable by either tightening `c_grid` to
-exactly the explored range, raising the current to widen polarization,
-or accepting the looser margin as documented case-design metadata.
-Recorded here as a calibration debt; fix in the next case-calibration
-chunk.
+Case 1: all checks meet ADR-0005's 50 %-margin precondition (achieved
+2026-06-24 by lowering `LAMBDA_SMOOTH_D` from 1e-2 to 1e-4 in the
+reference solver — the 10-knot D parameterization was being over-
+smoothed into a near-constant fit, masking the true linear D-slope
+that c_data actually encodes). Tradeoff: joint-inverse wall time grew
+27s → 47s because BFGS now takes more iterations without the strong
+smoothness prior. Still well under the 5-10 min per-case budget.
 
 ## Frontier-agent pilot facts (to be filled in after pilot)
 

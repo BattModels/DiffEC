@@ -62,7 +62,7 @@ from pde import CaseGrid, FARADAY, simulate, v0_face_to_center  # noqa: E402
 K_KNOTS = 10
 DT_INV_S = 0.5         # inversion-phase forward step
 DT_FINAL_S = 0.1       # final forward solve for v_pred + flux samples
-LAMBDA_SMOOTH_D = 1e-2
+LAMBDA_SMOOTH_D = 1e-4
 LAMBDA_SMOOTH_TP = 1e-3
 INIT_LOG_D = float(np.log(1.0e-10))   # ~1e-6 cm²/s, mid-Li-electrolyte
 INIT_TP0 = 0.30
