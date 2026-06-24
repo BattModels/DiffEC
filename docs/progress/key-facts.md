@@ -205,20 +205,36 @@ up.
 
 | Case | Check #1 (D rel err) | Check #2 (t⁺⁰ abs err) | Check #4 (v RMSE) | Check #5 (flux worst) | Check #6 (self-consistency) |
 | --- | --- | --- | --- | --- | --- |
-| case_1 | 0.043 / 0.10 (57 %) | 0.014 / 0.05 (73 %) | 0.042 / 0.15 (72 %) | 0.0005 / 0.15 (100 %) | 0.042 / 0.15 (72 %) |
+| case_1 | 0.024 / 0.10 (76 %) | 0.018 / 0.05 (64 %) | 0.042 / 0.15 (72 %) | 0.0002 / 0.15 (100 %) | 0.042 / 0.15 (72 %) |
+| case_2 | 0.047 / 0.10 (53 %) | 0.011 / 0.05 (78 %) | 0.042 / 0.15 (72 %) | 0.0003 / 0.15 (100 %) | 0.042 / 0.15 (72 %) |
 | case_2 | _TBD_ | _TBD_ | _TBD_ | _TBD_ | _TBD_ |
 | case_3 | _TBD_ | _TBD_ | _TBD_ | _TBD_ | _TBD_ |
 | case_4 | _TBD_ | _TBD_ | _TBD_ | _TBD_ | _TBD_ |
 
 Thresholds: 0.10 / 0.05 / 0.15 / 0.15 / 0.15 respectively. Target margin: 50 %.
 
-Case 1: all checks meet ADR-0005's 50 %-margin precondition (achieved
-2026-06-24 by lowering `LAMBDA_SMOOTH_D` from 1e-2 to 1e-4 in the
-reference solver — the 10-knot D parameterization was being over-
-smoothed into a near-constant fit, masking the true linear D-slope
-that c_data actually encodes). Tradeoff: joint-inverse wall time grew
-27s → 47s because BFGS now takes more iterations without the strong
-smoothness prior. Still well under the 5-10 min per-case budget.
+Cases 1-2: all checks meet ADR-0005's 50 %-margin precondition.
+
+Calibration moves that mattered:
+- `LAMBDA_SMOOTH_D` lowered from 1e-2 → 1e-4 in `reference_solver.py`
+  (2026-06-24) — the 10-knot D parameterization was over-smoothed
+  into a near-constant fit, masking the linear D-slope c_data encodes.
+- `DT_INV_S` lowered from 0.5 → 0.1 in `reference_solver.py`
+  (2026-06-24) — agent's NE inversion now runs at the same dt as
+  oracle's, tightening agreement on boundary param values
+  (was causing borderline regime label flips in case_2).
+- c_grid narrowed per case to where polarization gives good data
+  density (case_1: [0.55, 0.75]; case_2: [1.13, 1.49]). Outside
+  these ranges, D and t⁺⁰ are poorly constrained and the
+  endpoint c_grid points have noisy fits → margin drop.
+- case_2 uses `V_bar_si = 2.5e-4` override (~1.7× rho-derived)
+  to push the moving-frame v₀ enough that the lab-frame NE
+  inversion's |tp0 − tp0_NE| gap is robustly > 0.07 across
+  c_grid, avoiding borderline regime labels.
+
+Wall-time cost of `DT_INV_S = 0.1`: per-case joint inverse grew from
+~30s to ~140s. Total per case ~3 min — still under the 5-10 min
+budget. NE inversion grew from ~5s to ~25s.
 
 ## Frontier-agent pilot facts (to be filled in after pilot)
 

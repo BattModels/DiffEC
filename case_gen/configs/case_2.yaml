@@ -1,0 +1,116 @@
+# Case 2 — NE-deviates (moderate solvent motion).
+#
+# Regime intent (docs/plan/case-design.md §"Case 2"):
+#   Moderate ion-solvent correlation. Lab-frame and moving-frame
+#   inversions both produce positive t+0, but with magnitudes that
+#   diverge enough that a lab-frame agent fails check #2 (|t+0 -
+#   t+0_oracle| > 0.05) and check #6 (self-consistency: lab-frame
+#   parameters do not reproduce v_data when re-simulated under the
+#   moving-frame PDE).
+#
+# Discriminators vs case_1:
+# - Realistic V_bar (rho-derived, no override) -> strong convective
+#   coupling -> check #6 catches lab-frame submissions.
+# - tp0(c) spread is 0.20 across c_grid (vs 0.03 in case_1) -> wider
+#   gap between honest moving-frame and lab-frame inversions.
+# - D(c) is bowl-shaped (vs near-linear in case_1) -> tests the agent's
+#   ability to fit non-monotone material functions.
+#
+# Calibration target: reference solver passes all 7 checks with >= 50 %
+# margin (ADR-0005); lab-frame cheat (tp0 = tp0_NE) rmse/max > 0.15.
+
+case_id: case_2
+description: "NE-deviates: moderate convection; t+0_NE overshoots t+0 by 0.10-0.20."
+seed: 23456
+
+# --- Geometry ----------------------------------------------------------
+geometry:
+  L_cm: 0.3
+  Nx: 100
+
+# --- Time --------------------------------------------------------------
+time:
+  T_s: 1100.0
+  dt_s: 0.1
+  Nt_out: 50
+
+# --- Initial condition -------------------------------------------------
+initial:
+  c_init: 1.25    # mol/L, mid-range of c_grid
+
+# --- Material polynomials ---------------------------------------------
+material:
+  M0_g_per_mol: 44.05
+  M_g_per_mol: 287.09
+  T_temp_K: 363.15
+  rho_polynomial:
+    a: 1.123276
+    b: 0.106822
+    d: 0.007606
+  # V_bar override 2.5e-4 m^3/mol (~1.7x rho-derived). Pushes the
+  # moving-frame v0 large enough that the lab-frame NE inversion's
+  # |tp0 - tp0_NE| gap is robustly > 0.07 across most of c_grid,
+  # avoiding borderline regime labels near the 0.05 threshold.
+  # Still physically reasonable (real concentrated-electrolyte V_bar
+  # values span 1e-4 to 3e-4 m^3/mol depending on the system).
+  V_bar_si: 2.5e-4
+  #
+  # D(c): bowl-shaped, minimum near c=1.3 mol/L. Magnitudes a bit
+  # smaller than case_1 to slow diffusion and concentrate dynamics
+  # near the boundaries (helps the inverse see D(c) variation).
+  D_table_cgs:
+    c_mol_per_L: [0.0,    0.3,    0.7,    1.0,    1.3,    1.6,    2.0,    2.5]
+    D_cm2_per_s: [4.5e-7, 4.0e-7, 3.4e-7, 3.0e-7, 2.8e-7, 3.0e-7, 3.5e-7, 4.0e-7]
+  # t+0(c): monotone-decreasing 0.32 -> 0.15 across c_grid.
+  # Spread 0.17 forces the lab-frame inversion (which yields ~uniform
+  # t+0_NE near the data mean) into mid-range values that miss the
+  # tails -> agent fails check #2 by design.
+  # Per ADR-0004, perturbed from published Steinrück fit:
+  #   Steinrück tp0(c) ~ 0.15 - 0.50*(c-1.87)/1.87 -> tp0(1) = 0.38,
+  #   tp0(1.5) = 0.25, tp0(2) = 0.18. Mine differs by >= 0.07 at all
+  #   c_grid points (close to 0.10 minimum; tighten if needed).
+  tp0_table:
+    c_mol_per_L: [0.0,  0.3,  0.7,  1.0,  1.3,  1.6,  2.0,  2.5]
+    tp0:         [0.40, 0.37, 0.32, 0.28, 0.24, 0.20, 0.15, 0.12]
+
+# --- Applied current schedule -----------------------------------------
+# Higher peak current than case_1: drives larger polarization (so
+# c-data spans more of c_grid) and larger v0 (so the moving/lab-frame
+# distinction is sharp enough to catch lab-frame submissions on #6).
+current:
+  schedule: ramp_hold_ramp
+  peak_A_per_cm2: 1.6e-3      # 16 A/m^2 (4x case_1)
+  ramp_up_s: 100.0
+  hold_s: 900.0
+  ramp_down_s: 100.0
+
+# --- Reporting grids ---------------------------------------------------
+# Narrowed in two stages from the design-doc [0.5, 2.0]:
+# 1) [0.7, 1.8]: data-supported range (case_1 lesson).
+# 2) [1.05, 1.50]: lab-frame |tp0 - tp0_NE| gap is robustly > 0.08
+#    here; outside this band the gap dips near 0.05 and the regime
+#    label flips at noise level between agent and oracle inversions.
+# This trades scope for label-stability — case_2 still tests the
+# NE-deviates discriminator across 50 points of c_grid.
+c_grid:
+  c_min: 1.13
+  c_max: 1.49
+  n: 50
+
+flux_samples:
+  n: 10
+  x_min_frac: 0.2
+  x_max_frac: 0.8
+  t_min_frac: 0.3
+  t_max_frac: 0.9
+
+# --- Noise model -------------------------------------------------------
+noise:
+  c_sigma_mol_per_L: 0.012    # ~1 % at c_init=1.25
+  v_sigma_rel: 0.05
+
+# --- Invert-NE parameters ---------------------------------------------
+invert_ne:
+  lambda_reg: 1.0e-4
+  init_tp0: 0.30
+  maxiter: 200

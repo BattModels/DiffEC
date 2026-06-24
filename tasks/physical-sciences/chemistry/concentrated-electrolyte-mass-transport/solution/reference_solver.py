@@ -60,7 +60,9 @@ from pde import CaseGrid, FARADAY, simulate, v0_face_to_center  # noqa: E402
 
 # ---------------------------------------------------------------- defaults
 K_KNOTS = 10
-DT_INV_S = 0.5         # inversion-phase forward step
+DT_INV_S = 0.1         # inversion-phase forward step — match oracle's
+                       # dt for tighter cross-implementation agreement on
+                       # NE-inversion boundary parameters (regime stability)
 DT_FINAL_S = 0.1       # final forward solve for v_pred + flux samples
 LAMBDA_SMOOTH_D = 1e-4
 LAMBDA_SMOOTH_TP = 1e-3
