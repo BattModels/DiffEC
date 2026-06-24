@@ -210,10 +210,26 @@ def write_truth_npz(
     flux_total: np.ndarray,
     flux_x: np.ndarray,
     flux_t: np.ndarray,
+    L_cm: float,
+    Nx: int,
+    dt_s: float,
+    num_steps: int,
+    c_init_mol_per_L: float,
+    V_bar_cm3_per_mol: float,
+    t_indices: np.ndarray,
+    factor_c_mol_per_L: np.ndarray,
+    factor_v: np.ndarray,
+    i_t_knots_s: np.ndarray,
+    i_amp_A_per_cm2: np.ndarray,
     seed: int,
     config_hash: str,
 ) -> None:
-    """Held-out ground truth consumed by the verifier."""
+    """Held-out ground truth consumed by the verifier.
+
+    Includes everything needed by verifier check #6 (self-consistency)
+    to re-run the moving-frame oracle solver from the agent's reported
+    ``(D, t⁺⁰)`` without reading the agent-container ``params.json``.
+    """
     path.parent.mkdir(parents=True, exist_ok=True)
     np.savez(
         path,
@@ -228,6 +244,18 @@ def write_truth_npz(
         flux_total=np.asarray(flux_total, dtype=np.float64),
         flux_x=np.asarray(flux_x, dtype=np.float64),
         flux_t=np.asarray(flux_t, dtype=np.float64),
+        # Resim fields for check #6.
+        L_cm=np.float64(L_cm),
+        Nx=np.int64(Nx),
+        dt_s=np.float64(dt_s),
+        num_steps=np.int64(num_steps),
+        c_init_mol_per_L=np.float64(c_init_mol_per_L),
+        V_bar_cm3_per_mol=np.float64(V_bar_cm3_per_mol),
+        t_indices=np.asarray(t_indices, dtype=np.int64),
+        factor_c_mol_per_L=np.asarray(factor_c_mol_per_L, dtype=np.float64),
+        factor_v=np.asarray(factor_v, dtype=np.float64),
+        i_t_knots_s=np.asarray(i_t_knots_s, dtype=np.float64),
+        i_amp_A_per_cm2=np.asarray(i_amp_A_per_cm2, dtype=np.float64),
         seed=np.int64(seed),
         config_hash=np.array(config_hash, dtype="U64"),
     )

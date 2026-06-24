@@ -335,6 +335,18 @@ def generate_case(config_path: Path, verbose: bool = True) -> None:
         flux_total=flux_total,
         flux_x=flux_x,
         flux_t=flux_t,
+        # Resim fields for verifier check #6.
+        L_cm=L_cm,
+        Nx=Nx,
+        dt_s=dt_s,
+        num_steps=num_steps,
+        c_init_mol_per_L=c_init,
+        V_bar_cm3_per_mol=V_bar_scalar_cgs,
+        t_indices=t_indices,
+        factor_c_mol_per_L=factor_c,
+        factor_v=factor_v,
+        i_t_knots_s=i_t_knots,
+        i_amp_A_per_cm2=i_amp_knots,
         seed=seed,
         config_hash=config_hash,
     )

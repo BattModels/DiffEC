@@ -153,6 +153,32 @@ record once we get to the reference solution.
 
 ## Anti-cheat
 
+### Check #6 strength depends on V_bar magnitude
+
+Anti-cheat sanity run for case_1 (`V_bar = 5e-5` m³/mol — the weak
+override that makes case_1 robustly NE-valid):
+
+| Submission                              | rmse / max | Pass check #6? |
+| --------------------------------------- | ---------- | -------------- |
+| Honest agent                            | 0.042      | yes            |
+| Cheat: `tp0 = 0`                        | 0.310      | no             |
+| Cheat: `tp0 = 0.15` constant            | 0.159      | no             |
+| Cheat: `tp0 = oracle's t⁺⁰_NE` (lab-frame fit) | 0.046 | **yes (!)**    |
+
+Case 1 is the NE-valid calibration case by design — lab-frame agents
+*should* pass it, so this is expected. Two important consequences:
+
+1. **Check #6 alone is not a moving-frame discriminator on case 1.**
+   The discriminator is the *full* set of checks across all 4 cases.
+   For case 1, checks #1/#2/#3 do the discrimination; #6 catches only
+   garbage (`tp0 = 0`) and crude constants.
+2. **Cases 2-4 must use realistic V_bar** (≥ 1e-4 m³/mol) so that the
+   lab-frame cheat fails check #6. Specifically, the gap between
+   moving-frame v₀ and lab-frame v₀ has to exceed the 0.15 RMSE
+   threshold. Verify per case before locking that YAML — log the
+   "lab-frame cheat rmse/max" alongside the honest-agent margin so
+   the discrimination is documented.
+
 ### Don't ship anything in `cases/` that isn't in the spec
 The agent's prompt is exactly `cases/case_X/{data.h5, params.json, formalism.md}`.
 Nothing else. Pre-PR CI (and any local smoke test) should grep `cases/`
@@ -179,7 +205,7 @@ up.
 
 | Case | Check #1 (D rel err) | Check #2 (t⁺⁰ abs err) | Check #4 (v RMSE) | Check #5 (flux worst) | Check #6 (self-consistency) |
 | --- | --- | --- | --- | --- | --- |
-| case_1 | 0.082 / 0.10 (**18 %**) | 0.015 / 0.05 (70 %) | 0.042 / 0.15 (72 %) | 0.0005 / 0.15 (100 %) | _skipped_ |
+| case_1 | 0.082 / 0.10 (**18 %**) | 0.015 / 0.05 (70 %) | 0.042 / 0.15 (72 %) | 0.0005 / 0.15 (100 %) | 0.042 / 0.15 (72 %) |
 | case_2 | _TBD_ | _TBD_ | _TBD_ | _TBD_ | _TBD_ |
 | case_3 | _TBD_ | _TBD_ | _TBD_ | _TBD_ | _TBD_ |
 | case_4 | _TBD_ | _TBD_ | _TBD_ | _TBD_ | _TBD_ |
