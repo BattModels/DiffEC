@@ -208,13 +208,14 @@ up.
 | case_1 | 0.024 / 0.10 (76 %) | 0.018 / 0.05 (64 %) | 0.042 / 0.15 (72 %) | 0.0002 / 0.15 (100 %) | 0.042 / 0.15 (72 %) |
 | case_2 | 0.024 / 0.10 (77 %) | 0.010 / 0.05 (81 %) | 0.042 / 0.15 (72 %) | 0.0003 / 0.15 (100 %) | 0.042 / 0.15 (72 %) |
 | case_3 | 0.026 / 0.10 (74 %) | 0.017 / 0.05 (67 %) | 0.043 / 0.15 (72 %) | 0.0087 / 0.15 (94 %) | 0.050 / 0.15 (66 %) |
+| case_4 | 0.047 / 0.10 (53 %) | 0.014 / 0.05 (71 %) | 0.043 / 0.15 (71 %) | 0.0190 / 0.15 (87 %) | 0.046 / 0.15 (70 %) |
 | case_2 | _TBD_ | _TBD_ | _TBD_ | _TBD_ | _TBD_ |
 | case_3 | _TBD_ | _TBD_ | _TBD_ | _TBD_ | _TBD_ |
 | case_4 | _TBD_ | _TBD_ | _TBD_ | _TBD_ | _TBD_ |
 
 Thresholds: 0.10 / 0.05 / 0.15 / 0.15 / 0.15 respectively. Target margin: 50 %.
 
-Cases 1-3: all checks meet ADR-0005's 50 %-margin precondition.
+Cases 1-4: all checks meet ADR-0005's 50 %-margin precondition.
 
 Calibration moves that mattered:
 - `LAMBDA_SMOOTH_D` lowered from 1e-2 → 1e-4 in `reference_solver.py`

@@ -1,0 +1,103 @@
+# Case 4 — Multi-modal (the basin trap).
+#
+# Regime intent (docs/plan/case-design.md §"Case 4"):
+#   A loss landscape with two well-separated basins:
+#   - "Physically correct" basin: deeply negative t+0 throughout c_grid.
+#   - "Lab-frame-like" basin: positive t+0 (fits c_data plausibly but
+#     mispredicts v_data).
+#   Single-start BFGS from a literature-prior init (t+0 ~ +0.3) lands
+#   in the wrong basin a substantial fraction of the time. Multi-start
+#   with seeds spanning negative-positive resolves this.
+#
+# Discrimination vs case_3: case_3 has moderate negative t+0 (truth in
+# [-0.31, -0.16]) which BFGS reaches from +0.30 init. Case_4 pushes
+# the negative magnitude further (truth in [-0.45, -0.28]) and uses a
+# higher current so the basin-B "literature" fit is a deeper local
+# minimum.
+
+case_id: case_4
+description: "Multi-modal basin trap: deeply negative t+0; single-start from positive init misses."
+seed: 45678
+
+# --- Geometry ----------------------------------------------------------
+geometry:
+  L_cm: 0.3
+  Nx: 100
+
+# --- Time --------------------------------------------------------------
+time:
+  T_s: 1100.0
+  dt_s: 0.1
+  Nt_out: 50
+
+# --- Initial condition -------------------------------------------------
+initial:
+  c_init: 3.0     # mol/L, middle of c_grid
+
+# --- Material polynomials ---------------------------------------------
+material:
+  M0_g_per_mol: 44.05
+  M_g_per_mol: 287.09
+  T_temp_K: 363.15
+  rho_polynomial:
+    a: 1.123276
+    b: 0.106822
+    d: 0.007606
+  # Realistic V_bar at c_avg=3.0 ~ 1.3e-4 m^3/mol (rho-derived).
+
+  # D(c): smoothly decreasing with a shoulder/plateau near c=3.0
+  # (case_4 c_grid sits inside this plateau, so D varies only ~4 %
+  # across c_grid — well-matched to a 10-knot piecewise-linear fit
+  # spanning the wider c_data range).
+  D_table_cgs:
+    c_mol_per_L: [0.0,    0.5,    1.0,    1.5,    2.0,    2.5,    3.0,    3.5,    4.0]
+    D_cm2_per_s: [1.5e-6, 1.2e-6, 9.0e-7, 6.5e-7, 4.5e-7, 3.8e-7, 3.6e-7, 3.0e-7, 2.5e-7]
+  # t+0(c): strongly negative across c_grid; non-monotone with slight
+  # recovery at very high c per design. In c_grid [2.7, 3.3] true tp0
+  # spans [-0.45, -0.28]. From a +0.30 init, BFGS must traverse ~0.75
+  # units to reach the correct basin -- and the basin-B (lab-frame
+  # positive-tp0 + adjusted-D) competing fit is deep enough to trap
+  # single-start optimization.
+  tp0_table:
+    c_mol_per_L: [0.0,  0.5,  1.0,  1.5,  2.0,   2.5,   3.0,   3.5,   4.0]
+    tp0:         [0.40, 0.30, 0.20, 0.05, -0.15, -0.30, -0.40, -0.35, -0.30]
+
+# --- Applied current schedule -----------------------------------------
+current:
+  schedule: ramp_hold_ramp
+  peak_A_per_cm2: 3.2e-3      # 32 A/m^2 (same as original case_3)
+  ramp_up_s: 100.0
+  hold_s: 900.0
+  ramp_down_s: 100.0
+
+# --- Reporting grids ---------------------------------------------------
+# c_grid in deep-negative-tp0 region. c_init = 3.0 sits inside c_grid
+# so data density supports the reporting grid (per case_3 lesson).
+# Narrowed from [2.70, 3.30] to [2.85, 3.22] to exclude the lab-frame
+# tp_NE zero crossings (~ c=2.81 and c=3.27) — those would cause
+# regime label flips between oracle and agent NE-inversion
+# implementations at the crossings (case_3-style borderline issue).
+# Inside [2.85, 3.22]: oracle tp_NE > 0 robustly, true tp < 0 -> all
+# NE_wrong_sign labels stable.
+c_grid:
+  c_min: 2.93
+  c_max: 3.20
+  n: 50
+
+flux_samples:
+  n: 10
+  x_min_frac: 0.2
+  x_max_frac: 0.8
+  t_min_frac: 0.3
+  t_max_frac: 0.9
+
+# --- Noise model -------------------------------------------------------
+noise:
+  c_sigma_mol_per_L: 0.018    # ~0.6 % at c_init=3.0
+  v_sigma_rel: 0.05
+
+# --- Invert-NE parameters ---------------------------------------------
+invert_ne:
+  lambda_reg: 1.0e-4
+  init_tp0: 0.30
+  maxiter: 200
