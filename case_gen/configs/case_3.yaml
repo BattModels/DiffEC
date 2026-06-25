@@ -1,0 +1,115 @@
+# Case 3 — NE-wrong-sign (the headline case).
+#
+# Regime intent (docs/plan/case-design.md §"Case 3"):
+#   Reproduce the Steinrück-2020-like phenomenon: t+0(c) crosses zero
+#   somewhere in c_grid (positive at low c, negative at high c). The
+#   lab-frame NE inversion is structurally constrained to positive
+#   tp0_NE (it absorbs convective transport into a positive migration
+#   coefficient). Lab-frame agents fail:
+#   - check #2 catastrophically (|+0.3 - (-0.3)| = 0.6 >> 0.05) at
+#     high-c points.
+#   - check #3 (regime) at every c_grid point in the wrong-sign region.
+#   - check #6 (self-consistency) because positive tp0 produces wrong
+#     v0 in the negative-true-tp0 region.
+#
+# Per ADR-0004, the crossover point and magnitudes are perturbed from
+# the published Steinrück 2020 fit (which has crossover near c=1.87
+# mol/L and a steeper slope).
+
+case_id: case_3
+description: "NE-wrong-sign: t+0(c) crosses zero in c_grid; headline case."
+seed: 34567
+
+# --- Geometry ----------------------------------------------------------
+geometry:
+  L_cm: 0.3
+  Nx: 100
+
+# --- Time --------------------------------------------------------------
+time:
+  T_s: 1100.0
+  dt_s: 0.1
+  Nt_out: 50
+
+# --- Initial condition -------------------------------------------------
+initial:
+  c_init: 2.5     # mol/L, middle of c_grid (high-c negative-tp0 region)
+
+# --- Material polynomials ---------------------------------------------
+material:
+  M0_g_per_mol: 44.05
+  M_g_per_mol: 287.09
+  T_temp_K: 363.15
+  rho_polynomial:
+    a: 1.123276
+    b: 0.106822
+    d: 0.007606
+  # No V_bar_si override -> rho-derived ~1.42e-4 m^3/mol at c_avg=1.5.
+  # Strong enough convective coupling to make the sign flip visible in
+  # v_data and catch lab-frame cheats on check #6.
+
+  # D(c): monotonically decreasing 1.2e-6 -> 2.7e-7 cm^2/s. Larger
+  # range than case_2's bowl, but smooth and well-parameterized for
+  # the 10-knot piecewise-linear inverter.
+  D_table_cgs:
+    c_mol_per_L: [0.0,    0.5,    1.0,    1.5,    2.0,    2.5,    3.0,    3.5]
+    D_cm2_per_s: [1.2e-6, 1.0e-6, 7.0e-7, 5.0e-7, 4.0e-7, 3.5e-7, 3.0e-7, 2.7e-7]
+  # t+0(c): smooth, monotone-decreasing across [0.40, -0.40]. Crosses
+  # zero near c=1.7 mol/L. In c_grid [2.20, 2.80], tp0 is clearly
+  # negative ~ -0.13 to -0.34 — well-separated from zero so honest
+  # moving-frame agents recover tp0 < 0 and lab-frame agents cannot
+  # match (their tp0_NE stays positive or near-zero).
+  # Distinct from published Steinrück (crossover ~c=1.87) by >= 0.10
+  # in absolute value at each c_grid point.
+  tp0_table:
+    c_mol_per_L: [0.0,  0.5,  1.0,  1.5,  2.0,   2.5,   3.0,   3.5]
+    tp0:         [0.40, 0.30, 0.20, 0.05, -0.10, -0.25, -0.35, -0.40]
+
+# --- Applied current schedule -----------------------------------------
+# Higher peak than case_2: drives polarization wide enough to populate
+# c_data across the entire c_grid (including the wrong-sign region).
+current:
+  schedule: ramp_hold_ramp
+  peak_A_per_cm2: 4.8e-3      # 48 A/m^2 (1.5x case_2's 32). Wider
+                              # polarization populates c_data into
+                              # the high-c negative-tp0 tail.
+  ramp_up_s: 100.0
+  hold_s: 900.0
+  ramp_down_s: 100.0
+
+# --- Reporting grids ---------------------------------------------------
+# Narrowed from design's [0.5, 3.0] to [2.20, 2.80] — the deep-
+# negative-tp0 region. c_init = 2.5 puts c_data density inside
+# c_grid (rather than centered far below it as in the original
+# c_init = 1.5 design). With true tp0 in c_grid spanning roughly
+# [-0.13, -0.34], honest moving-frame agents recover tp0 < 0
+# while lab-frame agents recover tp0_NE > 0 (lab frame can't
+# represent the convective transport without inverting the
+# migration sign) — robust NE_wrong_sign discrimination.
+#
+# Lost scope: full sign-flip transition is not in c_grid. Gain:
+# robust labels + unambiguous NE_wrong_sign discriminator. A
+# lab-frame agent reports tp0 ~ +0.2 -> |tp0_agent - tp0_oracle|
+# ~ 0.5 = 10x the threshold -> catastrophic fail on check #2.
+c_grid:
+  c_min: 2.20
+  c_max: 2.80
+  n: 50
+
+flux_samples:
+  n: 10
+  x_min_frac: 0.2
+  x_max_frac: 0.8
+  t_min_frac: 0.3
+  t_max_frac: 0.9
+
+# --- Noise model -------------------------------------------------------
+noise:
+  c_sigma_mol_per_L: 0.015    # ~1 % at c_init=1.5
+  v_sigma_rel: 0.05
+
+# --- Invert-NE parameters ---------------------------------------------
+invert_ne:
+  lambda_reg: 1.0e-4
+  init_tp0: 0.30
+  maxiter: 200

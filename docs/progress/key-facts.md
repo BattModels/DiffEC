@@ -206,14 +206,15 @@ up.
 | Case | Check #1 (D rel err) | Check #2 (t⁺⁰ abs err) | Check #4 (v RMSE) | Check #5 (flux worst) | Check #6 (self-consistency) |
 | --- | --- | --- | --- | --- | --- |
 | case_1 | 0.024 / 0.10 (76 %) | 0.018 / 0.05 (64 %) | 0.042 / 0.15 (72 %) | 0.0002 / 0.15 (100 %) | 0.042 / 0.15 (72 %) |
-| case_2 | 0.047 / 0.10 (53 %) | 0.011 / 0.05 (78 %) | 0.042 / 0.15 (72 %) | 0.0003 / 0.15 (100 %) | 0.042 / 0.15 (72 %) |
+| case_2 | 0.024 / 0.10 (77 %) | 0.010 / 0.05 (81 %) | 0.042 / 0.15 (72 %) | 0.0003 / 0.15 (100 %) | 0.042 / 0.15 (72 %) |
+| case_3 | 0.026 / 0.10 (74 %) | 0.017 / 0.05 (67 %) | 0.043 / 0.15 (72 %) | 0.0087 / 0.15 (94 %) | 0.050 / 0.15 (66 %) |
 | case_2 | _TBD_ | _TBD_ | _TBD_ | _TBD_ | _TBD_ |
 | case_3 | _TBD_ | _TBD_ | _TBD_ | _TBD_ | _TBD_ |
 | case_4 | _TBD_ | _TBD_ | _TBD_ | _TBD_ | _TBD_ |
 
 Thresholds: 0.10 / 0.05 / 0.15 / 0.15 / 0.15 respectively. Target margin: 50 %.
 
-Cases 1-2: all checks meet ADR-0005's 50 %-margin precondition.
+Cases 1-3: all checks meet ADR-0005's 50 %-margin precondition.
 
 Calibration moves that mattered:
 - `LAMBDA_SMOOTH_D` lowered from 1e-2 → 1e-4 in `reference_solver.py`
@@ -224,9 +225,18 @@ Calibration moves that mattered:
   oracle's, tightening agreement on boundary param values
   (was causing borderline regime label flips in case_2).
 - c_grid narrowed per case to where polarization gives good data
-  density (case_1: [0.55, 0.75]; case_2: [1.13, 1.49]). Outside
-  these ranges, D and t⁺⁰ are poorly constrained and the
-  endpoint c_grid points have noisy fits → margin drop.
+  density (case_1: [0.55, 0.75]; case_2: [1.13, 1.49]; case_3:
+  [2.20, 2.80]). Outside these ranges, D and t⁺⁰ are poorly
+  constrained and the endpoint c_grid points have noisy fits →
+  margin drop.
+- Reference solver's knot range tracks **c_data**, not c_grid
+  (added in case_3 calibration, 2026-06-25). The forward PDE
+  evaluates D(c) and tp0(c) at every cell, with c often spanning
+  far outside the narrow c_grid. Knots only over c_grid leaves
+  the agent's model flat-extrapolated outside, so c_sim can't
+  match c_data near electrodes and the joint inverse misfits
+  catastrophically. Cases 1 and 2 also improved with this fix
+  (case_2's D margin 53 % → 77 %).
 - case_2 uses `V_bar_si = 2.5e-4` override (~1.7× rho-derived)
   to push the moving-frame v₀ enough that the lab-frame NE
   inversion's |tp0 − tp0_NE| gap is robustly > 0.07 across
