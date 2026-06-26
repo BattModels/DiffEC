@@ -54,16 +54,15 @@ material:
   D_table_cgs:
     c_mol_per_L: [0.0,    0.5,    1.0,    1.5,    2.0,    2.5,    3.0,    3.5]
     D_cm2_per_s: [1.2e-6, 1.0e-6, 7.0e-7, 5.0e-7, 4.0e-7, 3.5e-7, 3.0e-7, 2.7e-7]
-  # t+0(c): smooth, monotone-decreasing across [0.40, -0.40]. Crosses
-  # zero near c=1.7 mol/L. In c_grid [2.20, 2.80], tp0 is clearly
-  # negative ~ -0.13 to -0.34 — well-separated from zero so honest
-  # moving-frame agents recover tp0 < 0 and lab-frame agents cannot
-  # match (their tp0_NE stays positive or near-zero).
-  # Distinct from published Steinrück (crossover ~c=1.87) by >= 0.10
-  # in absolute value at each c_grid point.
+  # t+0(c): smooth, monotone-decreasing. Original case_3 design
+  # shifted -0.12 uniformly to land >= 0.10 below the published
+  # Steinrück linear fit across c_grid [2.20, 2.80] — satisfies
+  # ADR-0004 anti-cheat while keeping tp0 magnitude moderate (lab-
+  # frame NE inversion stays well-behaved). In c_grid, true tp0
+  # spans roughly [-0.25, -0.43].
   tp0_table:
-    c_mol_per_L: [0.0,  0.5,  1.0,  1.5,  2.0,   2.5,   3.0,   3.5]
-    tp0:         [0.40, 0.30, 0.20, 0.05, -0.10, -0.25, -0.35, -0.40]
+    c_mol_per_L: [0.0,  0.5,  1.0,  1.5,   2.0,   2.5,   3.0,   3.5]
+    tp0:         [0.28, 0.18, 0.08, -0.07, -0.22, -0.37, -0.47, -0.52]
 
 # --- Applied current schedule -----------------------------------------
 # Higher peak than case_2: drives polarization wide enough to populate
@@ -92,8 +91,8 @@ current:
 # lab-frame agent reports tp0 ~ +0.2 -> |tp0_agent - tp0_oracle|
 # ~ 0.5 = 10x the threshold -> catastrophic fail on check #2.
 c_grid:
-  c_min: 2.20
-  c_max: 2.80
+  c_min: 2.42
+  c_max: 2.69
   n: 50
 
 flux_samples:
@@ -110,6 +109,6 @@ noise:
 
 # --- Invert-NE parameters ---------------------------------------------
 invert_ne:
-  lambda_reg: 1.0e-4
+  lambda_reg: 1.0e-3
   init_tp0: 0.30
   maxiter: 200

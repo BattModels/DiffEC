@@ -27,7 +27,7 @@ def invert_ne(
     i_fn,
     grid: CaseGrid,
     c_grid_mol_per_m3: np.ndarray,       # (50,) SI evaluation points
-    lambda_reg: float = 1e-4,
+    lambda_reg: float = 1e-3,
     init_tp0: float = 0.30,
     maxiter: int = 200,
     verbose: bool = False,

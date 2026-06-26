@@ -52,15 +52,16 @@ material:
   D_table_cgs:
     c_mol_per_L: [0.0,    0.5,    1.0,    1.5,    2.0,    2.5,    3.0,    3.5,    4.0]
     D_cm2_per_s: [1.5e-6, 1.2e-6, 9.0e-7, 6.5e-7, 4.5e-7, 3.8e-7, 3.6e-7, 3.0e-7, 2.5e-7]
-  # t+0(c): strongly negative across c_grid; non-monotone with slight
-  # recovery at very high c per design. In c_grid [2.7, 3.3] true tp0
-  # spans [-0.45, -0.28]. From a +0.30 init, BFGS must traverse ~0.75
-  # units to reach the correct basin -- and the basin-B (lab-frame
-  # positive-tp0 + adjusted-D) competing fit is deep enough to trap
-  # single-start optimization.
+  # t+0(c): moderately negative across c_grid with non-monotone
+  # recovery at very high c. Magnitude is SHALLOWER than the published
+  # Steinrück fit at c >= 2.9 — designed to land at least 0.10 above
+  # Steinrück's line at every c_grid point (avoids ADR-0004 lookup
+  # attack). In c_grid [2.93, 3.20] true tp0 spans roughly
+  # [-0.18, -0.20] — clearly negative for the NE_wrong_sign
+  # discriminator, but distinct from any literature linear fit.
   tp0_table:
     c_mol_per_L: [0.0,  0.5,  1.0,  1.5,  2.0,   2.5,   3.0,   3.5,   4.0]
-    tp0:         [0.40, 0.30, 0.20, 0.05, -0.15, -0.30, -0.40, -0.35, -0.30]
+    tp0:         [0.40, 0.30, 0.20, 0.05, -0.05, -0.15, -0.20, -0.15, -0.10]
 
 # --- Applied current schedule -----------------------------------------
 current:
@@ -98,6 +99,6 @@ noise:
 
 # --- Invert-NE parameters ---------------------------------------------
 invert_ne:
-  lambda_reg: 1.0e-4
+  lambda_reg: 1.0e-3
   init_tp0: 0.30
   maxiter: 200

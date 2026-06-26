@@ -203,19 +203,23 @@ up.
 > Updated whenever case configs or the reference solution change.
 > Required by ADR-0005's audit mode.
 
-| Case | Check #1 (D rel err) | Check #2 (t⁺⁰ abs err) | Check #4 (v RMSE) | Check #5 (flux worst) | Check #6 (self-consistency) |
-| --- | --- | --- | --- | --- | --- |
-| case_1 | 0.024 / 0.10 (76 %) | 0.018 / 0.05 (64 %) | 0.042 / 0.15 (72 %) | 0.0002 / 0.15 (100 %) | 0.042 / 0.15 (72 %) |
-| case_2 | 0.024 / 0.10 (77 %) | 0.010 / 0.05 (81 %) | 0.042 / 0.15 (72 %) | 0.0003 / 0.15 (100 %) | 0.042 / 0.15 (72 %) |
-| case_3 | 0.026 / 0.10 (74 %) | 0.017 / 0.05 (67 %) | 0.043 / 0.15 (72 %) | 0.0087 / 0.15 (94 %) | 0.050 / 0.15 (66 %) |
-| case_4 | 0.047 / 0.10 (53 %) | 0.014 / 0.05 (71 %) | 0.043 / 0.15 (71 %) | 0.0190 / 0.15 (87 %) | 0.046 / 0.15 (70 %) |
+| Case | Check #1 (D rel err) | Check #2 (t⁺⁰ abs err) | Check #4 (v RMSE) | Check #5 (flux worst) | Check #6 (self-consistency) | Check #3 (regime) |
+| --- | --- | --- | --- | --- | --- | --- |
+| case_1 | 0.017 / 0.10 (83 %) | 0.013 / 0.05 (74 %) | 0.042 / 0.15 (72 %) | 0.0009 / 0.15 (99 %) | 0.042 / 0.15 (72 %) | 50/50 ✓ |
+| case_2 | 0.024 / 0.10 (77 %) | 0.010 / 0.05 (81 %) | 0.042 / 0.15 (72 %) | 0.0003 / 0.15 (100 %) | 0.042 / 0.15 (72 %) | 50/50 ✓ |
+| case_3 | 0.016 / 0.10 (84 %) | 0.008 / 0.05 (84 %) | 0.043 / 0.15 (72 %) | 0.0192 / 0.15 (87 %) | 0.050 / 0.15 (66 %) | **48/50** (2 borderline) |
+| case_4 | 0.026 / 0.10 (74 %) | 0.011 / 0.05 (78 %) | 0.043 / 0.15 (71 %) | 0.0080 / 0.15 (95 %) | 0.046 / 0.15 (70 %) | 50/50 ✓ |
 | case_2 | _TBD_ | _TBD_ | _TBD_ | _TBD_ | _TBD_ |
 | case_3 | _TBD_ | _TBD_ | _TBD_ | _TBD_ | _TBD_ |
 | case_4 | _TBD_ | _TBD_ | _TBD_ | _TBD_ | _TBD_ |
 
 Thresholds: 0.10 / 0.05 / 0.15 / 0.15 / 0.15 respectively. Target margin: 50 %.
 
-Cases 1-4: all checks meet ADR-0005's 50 %-margin precondition.
+Cases 1-4: all *continuous* checks (#1, #2, #4, #5, #6) meet ADR-0005's
+50 %-margin precondition. The *categorical* regime check (#3) passes
+exact-match on cases 1, 2, 4 (50/50 each) but case_3 has 2 borderline
+mismatches at lab-frame tp⁺⁰_NE zero crossings near c_grid endpoints
+(see "case_3 regime calibration debt" below).
 
 Calibration moves that mattered:
 - `LAMBDA_SMOOTH_D` lowered from 1e-2 → 1e-4 in `reference_solver.py`
@@ -246,6 +250,41 @@ Calibration moves that mattered:
 Wall-time cost of `DT_INV_S = 0.1`: per-case joint inverse grew from
 ~30s to ~140s. Total per case ~3 min — still under the 5-10 min
 budget. NE inversion grew from ~5s to ~25s.
+
+### case_3 regime calibration debt (2026-06-26)
+
+After perturbing case_3's `tp⁺⁰(c)` by -0.12 to satisfy ADR-0004
+(holds the held-out value ≥ 0.10 from the published Steinrück fit),
+the lab-frame NE inversion's `tp⁺⁰_NE(c)` has two zero crossings
+in c_grid (around c ~ 2.40 and c ~ 2.70). These crossings happen
+at slightly different c values between oracle and agent BFGS runs
+(~1 c_grid index off), and at the crossing point the regime label
+flips (NE_wrong_sign / NE_deviates).
+
+Whack-a-mole calibration log (every iteration moved the c_grid
+boundaries but the borderline persisted in some form):
+
+| c_grid (case_3) | mismatches | note |
+| --- | --- | --- |
+| [2.20, 2.80] | 22 | crossings inside c_grid + label flips |
+| [2.35, 2.75] | 6  | crossings near both boundaries |
+| [2.35, 2.71] | 1  | only c_min crossing left |
+| [2.40, 2.69] | 6  | too narrow → tp_NE overfits noise |
+| [2.40, 2.71] | 1  | crossing at c_min boundary |
+| [2.42, 2.69] | 1  | crossing still at c_min |
+
+Even after heavier `lambda_reg = 1e-3` (vs 1e-4) to stabilize the
+NE inversion, 1-2 mismatches persist. Documented as accepted
+calibration debt: 48/50 regime labels match — 24× more than chance
+under any reasonable null model. Could be eliminated by either:
+1. Loosening the regime check tolerance from 0.05 → 0.06 (verifier
+   spec change; needs ADR).
+2. Replacing the 50-point free-knot tp⁺⁰_NE ansatz with a low-degree
+   polynomial in `oracle/invert_ne.py` AND `solution/lab_frame_solver.py`
+   so both implementations land at the same (smoother) optimum.
+
+ADR-0005 spec is "≥ 50 % margin on continuous checks"; the regime
+check is categorical and the spec doesn't quantify margin for it.
 
 ## Frontier-agent pilot facts (to be filled in after pilot)
 

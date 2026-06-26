@@ -55,15 +55,18 @@ material:
   D_table_cgs:
     c_mol_per_L: [0.0, 0.1, 0.2, 0.4, 0.6, 0.8, 1.0, 1.2]
     D_cm2_per_s: [6.5e-7, 6.4e-7, 6.0e-7, 5.5e-7, 5.0e-7, 4.5e-7, 4.0e-7, 3.8e-7]
-  # t+0(c): nearly flat at 0.30 (small monotone variation within the
+  # t+0(c): nearly flat at 0.10 (small monotone variation within the
   # 0.05 NE_valid threshold). The case_1 calibration target is
   # |t+0_oracle − t+0_NE_oracle| < 0.05 at every c_grid point. A wide
   # true-tp0 spread can't satisfy that no matter how the agent inverts,
   # because the lab-frame inversion sees a single noisy c_data field
   # and tends to collapse near a representative average.
+  # Held at 0.10 (not 0.30) to satisfy ADR-0004 anti-cheat per the
+  # max-distance criterion: at c=0.45 the published Steinrück line
+  # gives tp0 ~ 0.32, so max|Δtp_lit| ~ 0.22 >> 0.10.
   tp0_table:
     c_mol_per_L: [0.0, 0.1, 0.2, 0.4, 0.6, 0.8, 1.0, 1.2]
-    tp0:         [0.32, 0.315, 0.31, 0.305, 0.30, 0.295, 0.29, 0.285]
+    tp0:         [0.12, 0.115, 0.11, 0.105, 0.10, 0.095, 0.09, 0.085]
 
 # --- Applied current schedule -----------------------------------------
 # Piecewise-linear i_app(t) in A/cm^2 internally; converted to A/m^2 in
@@ -104,6 +107,6 @@ noise:
 # --- Invert-NE parameters ---------------------------------------------
 # BFGS on the 50-point t+0_NE ansatz, holding D = D_oracle fixed.
 invert_ne:
-  lambda_reg: 1.0e-4
-  init_tp0: 0.30
+  lambda_reg: 1.0e-3
+  init_tp0: 0.10
   maxiter: 200

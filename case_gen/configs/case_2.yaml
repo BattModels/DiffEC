@@ -111,6 +111,6 @@ noise:
 
 # --- Invert-NE parameters ---------------------------------------------
 invert_ne:
-  lambda_reg: 1.0e-4
+  lambda_reg: 1.0e-3
   init_tp0: 0.30
   maxiter: 200
