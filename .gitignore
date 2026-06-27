@@ -179,3 +179,7 @@ docs/session.md
 
 # Local reference-solver outputs from build-and-run smoke loops
 _local_results/
+
+# Frontier-agent pilot artifacts (API keys, harbor job dirs)
+scripts/pilot/.env
+jobs/
