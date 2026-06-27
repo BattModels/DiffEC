@@ -5,6 +5,18 @@
 > - `https://harborframework.com/docs/task-format`
 > - Example task: `tasks/physical-sciences/chemistry/geometric-pharmacophore-alignment/`
 >
+> Re-checked **2026-06-27** against:
+> - `harbor` CLI 0.16.0 (installed via `uv tool install harbor`).
+> - Upstream `geometric-pharmacophore-alignment/task.toml` at HEAD (unchanged
+>   from 2026-06-22 reference; still uses `schema_version = "1.0"` and
+>   `allow_internet = true`).
+>
+> Our `task.toml` parses successfully under Harbor 0.16.0's `TaskConfig`
+> pydantic schema (one `DeprecationWarning` for `allow_internet`, which is
+> auto-migrated to `network_mode = "public"` — identical to upstream's
+> example, so no action needed for now). ADR-0010 (pin `schema_version =
+> "1.0"`) holds.
+>
 > Refresh again before opening the PR. If the upstream `CONTRIBUTING.md` HEAD
 > moves, update this file *and* the related ADRs.
 
