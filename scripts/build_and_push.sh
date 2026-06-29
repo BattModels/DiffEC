@@ -2,6 +2,7 @@
 # Build the agent + verifier Docker images and push them to GHCR so
 # Singularity on an HPC cluster (e.g. Artemis) can pull them by name.
 #
+# Full end-to-end procedure: docs/pre-pr-runbook.md.
 # Run this ONCE on a Docker-capable host (laptop / Codespaces).
 # After it succeeds, edit task.toml to add the printed
 # `docker_image = "ghcr.io/…"` lines, commit, and run the pilot on

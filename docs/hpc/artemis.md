@@ -200,8 +200,11 @@ srun -p venkvis-cpu --qos=venkvis-short --mem=8G -t 02:00:00 --pty bash
 
 ## Running the Harbor pilot on Artemis
 
-Step-by-step procedure for the frontier-agent pilot (ADR-0008). See
-also `scripts/pilot/README.md` for the agent / cost rationale.
+Step-by-step procedure for the frontier-agent pilot (ADR-0008). The
+**full end-to-end procedure** (laptop build → Artemis pilot) lives in
+`docs/pre-pr-runbook.md` and supersedes this section if they ever
+disagree. See also `scripts/pilot/README.md` for the agent / cost
+rationale.
 
 **Off-cluster prep (one-time, ~30 min, on a Docker host):**
 

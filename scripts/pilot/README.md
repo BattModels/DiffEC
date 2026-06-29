@@ -1,5 +1,10 @@
 # Frontier-agent pilot driver (ADR-0008)
 
+> **For the full end-to-end procedure** (laptop image build → Artemis
+> singularity pilot) see `docs/pre-pr-runbook.md`. This file is
+> per-script documentation only.
+
+
 Runs the 3 frontier agents (Claude Opus 4.7, GPT-5, Gemini 2.5) against
 the bundled task and aggregates the solve rate + per-check failure
 modes. Per ADR-0008, the proposal commits to a 10–20 % aggregate solve
