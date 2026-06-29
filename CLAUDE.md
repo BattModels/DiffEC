@@ -47,8 +47,8 @@ Ship a complete, mergeable Harbor task that:
    the 5–10 min/case CPU budget.
 
 **Success criteria:**
-- Reference solution passes all 5 verifier checks on all 4 cases on a fresh
-  4–8 CPU machine in under 1 hour total wall time.
+- Reference solution passes all 7 verifier checks on all 4 cases on a fresh
+  4–8 CPU machine in under 1 hour total wall time (locally: 28/28 in ~11 min).
 - Frontier-agent pilot run (Claude Opus 4.7, GPT-5, Gemini 2.5) returns a
   solve rate in the proposal's 10–20 % target band.
 - PR opens cleanly against `harbor-framework/terminal-bench-science/main`,
@@ -205,7 +205,7 @@ Mostly local. The agent-side budget is laptop-scale by design.
 ## Definition of Done
 
 The task is mergeable when:
-1. The local verifier passes on all 4 cases against the reference solution, on a fresh checkout, in under 1 hour on 4–8 CPU cores: `RESULTS_DIR=./_local_results uv run pytest "$TASK/tests/test_outputs.py" -v` returns 20/20 green.
+1. The local verifier passes on all 4 cases against the reference solution, on a fresh checkout, in under 1 hour on 4–8 CPU cores: `RESULTS_DIR=./_local_results uv run pytest "$TASK/tests/test_outputs.py" -v` returns 28/28 green (7 active checks × 4 cases).
 2. `harbor run -p "$TASK" -a oracle` returns reward = 1.
 3. `docs/plan/case-design.md` documents each case's true parameter functions, noise level, concentration range, and the failure mode it is designed to catch — and the reference-solution margins on each check are recorded in `docs/progress/key-facts.md`.
 4. The bundled `environment/data/cases/case_X/` directories contain only what the agent should see; no leaked ground-truth files. The verifier image holds `tests/oracle_truth/` and `tests/oracle/` but never reaches the agent (Harbor's separate-container enforcement).
