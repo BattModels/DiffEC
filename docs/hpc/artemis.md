@@ -35,6 +35,42 @@ Jobs requesting more than 4h wall time under this QOS are **rejected** — size 
 | Home | `/home/<user>` | 80 GB | User home |
 | Node Local | `/tmp` | 1.9 TB NVMe | Ephemeral, fast I/O |
 
+## Containers (Singularity, no Docker)
+
+Artemis has **no native Docker**, but does have **Singularity 4.4.1**
+(module-loadable) and an installed `podman` (rootless mode unavailable
+because `/etc/subuid` lacks user entries).
+
+```bash
+module load singularity/4.4.1
+singularity --version            # singularity-ce version 4.4.1
+```
+
+Capabilities checked 2026-06-29:
+
+| Capability | Available? | Notes |
+|---|---|---|
+| `singularity exec docker://image` | ✓ | pulls any Docker image from a registry, converts to `.sif`, executes. |
+| `singularity build .sif file.def` (from a Singularity recipe) | ⚠ (no fakeroot) | `--fakeroot` errors with `no valid mapping entry found for $USER` because the cluster has no subuid mappings. |
+| `singularity build --remote` | ✓ (with Sylabs account) | Builds remotely via Sylabs Cloud. Free signup. |
+| Pre-built Docker images from public registries (ghcr.io, dockerhub) | ✓ | Anonymous pull works for public images. |
+
+**Implication for Harbor.** The Harbor framework's `--env singularity`
+mode (NVIDIA-contributed; see
+`harbor/environments/singularity/singularity.py`) requires a *pre-built*
+Docker image referenced by `docker_image = "..."` in `task.toml`. The
+canonical workflow for our task:
+
+1. Build the agent + verifier Docker images **once** on a Docker host
+   (laptop or GitHub Codespaces).
+2. Push them to `ghcr.io/<your-handle>/diffec-{env,tests}:vN` (made
+   public).
+3. Add `docker_image = "..."` lines to `task.toml`.
+4. On Artemis, `module load singularity/4.4.1` and run the pilot via
+   `scripts/pilot/run_pilot_singularity.sh`.
+
+The helper `scripts/build_and_push.sh` handles steps 1-2 end-to-end.
+
 ## Writing a SLURM Submission Script
 
 Create a bash script with `#SBATCH` directives. Example for a GPU job:
@@ -161,6 +197,76 @@ srun --partition=venkvis-debug --nodes=1 --gres=gpu:h100:1 --mem=2G --time=30 --
 # Interactive CPU session on the short-job fast lane (≤4h)
 srun -p venkvis-cpu --qos=venkvis-short --mem=8G -t 02:00:00 --pty bash
 ```
+
+## Running the Harbor pilot on Artemis
+
+Step-by-step procedure for the frontier-agent pilot (ADR-0008). See
+also `scripts/pilot/README.md` for the agent / cost rationale.
+
+**Off-cluster prep (one-time, ~30 min, on a Docker host):**
+
+```bash
+# 1. Have docker + gh CLI installed and authenticated.
+docker --version
+gh auth status
+
+# 2. Build the two images and push to ghcr.io.
+GHCR_USER=<your-github-handle> bash scripts/build_and_push.sh
+
+# 3. Make both packages PUBLIC so anonymous pulls work from Artemis.
+#    Either via gh:
+gh api --method PATCH /user/packages/container/diffec-env/visibility   -f visibility=public
+gh api --method PATCH /user/packages/container/diffec-tests/visibility -f visibility=public
+#    Or via browser: https://github.com/<your-handle>?tab=packages →
+#    each package → Package settings → Change visibility → Public.
+
+# 4. Add the two docker_image lines to task.toml (the script prints them).
+#    Commit and push.
+```
+
+**On Artemis (the actual pilot):**
+
+```bash
+# 1. Sync the repo to Artemis if not already.
+cd /nfs/turbo/coe-venkvis/$USER/projects/DiffEC
+git pull
+
+# 2. Load singularity + ensure harbor CLI is on PATH.
+module load singularity/4.4.1
+uv tool install harbor      # one-time, user-local
+
+# 3. Put API keys in scripts/pilot/.env (gitignored).
+cat > scripts/pilot/.env <<'EOF'
+ANTHROPIC_API_KEY=sk-ant-...
+OPENAI_API_KEY=sk-...
+GEMINI_API_KEY=AIza...
+EOF
+chmod 600 scripts/pilot/.env
+
+# 4. Request a long-running interactive CPU node (the pilot needs
+#    ~8h walltime, so use the general venkvis-cpu, not venkvis-short).
+srun -p venkvis-cpu -N 1 --cpus-per-task=16 --mem=32G \
+     -t 12:00:00 --pty bash
+# (Wait for allocation. Once you have a shell on the compute node:)
+
+module load singularity/4.4.1
+cd /nfs/turbo/coe-venkvis/$USER/projects/DiffEC
+bash scripts/pilot/run_pilot_singularity.sh
+
+# 5. Aggregate.
+uv run python scripts/pilot/aggregate.py \
+    --jobs jobs --out docs/progress/pilot_run.md
+```
+
+Singularity caches `.sif` files under `$SCRATCH_DIR/singularity_cache`
+(override with `SINGULARITY_CACHE`). The cache survives across runs but
+gets scratch-purged after 60 days — that's fine, the .sif is just a
+local mirror of the GHCR image.
+
+If you want to run the pilot as a batch job instead of interactively,
+wrap the `run_pilot_singularity.sh` call in an `sbatch` script with
+`--partition=venkvis-cpu --time=12:00:00` (the pilot is mostly idle
+wait on agent execution, so 16 cores is plenty).
 
 ## Safety Rules
 
