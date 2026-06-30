@@ -1,5 +1,9 @@
 # Pre-PR Runbook: smoke test + frontier-agent pilot
 
+> For machine-to-machine sync (laptop ↔ Artemis) and the
+> `origin` / `upstream` remote convention, see `docs/dev-setup.md`.
+
+
 The two remaining Definition-of-Done items (containerized Harbor oracle
 smoke test, frontier-agent pilot) can't be done on the Artemis HPC node
 alone — Harbor needs to build container images, and Artemis has no
