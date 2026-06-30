@@ -2,6 +2,15 @@
 # Singularity variant of run_pilot.sh for HPC clusters (e.g. Artemis)
 # that have Singularity/Apptainer but no Docker.
 #
+# !! BLOCKED on Artemis as of 2026-06-30. !!
+# Harbor 0.16's --env singularity hardcodes `singularity exec
+# --fakeroot`, which requires subuid mappings (none on Artemis for
+# users). Empirically: the FastAPI server in the container fails to
+# start with "could not use fakeroot: no valid mapping entry". See
+# docs/hpc/artemis.md for the full diagnosis and unblock paths.
+# Until subuid is enabled, run the pilot on a Docker host instead via
+# scripts/pilot/run_pilot.sh + `--env docker`.
+#
 # Prerequisites:
 #   1. `scripts/build_and_push.sh` already ran ONCE on a Docker host;
 #      task.toml now has `docker_image = "ghcr.io/…"` lines for both

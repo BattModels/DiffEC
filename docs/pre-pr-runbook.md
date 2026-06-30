@@ -135,17 +135,29 @@ git commit -m "Point task.toml at GHCR images for singularity env"
 git push origin feat/tb-sci-task
 ```
 
-## Phase 4 — Artemis: smoke test + pilot (~8 h wall, $200–500)
+## Phase 4 — Laptop: smoke test + pilot (~8 h wall, $200–500)
 
-SSH to Artemis from your laptop (`ssh changwex@artemis-login.engin.umich.edu`
-or whatever your endpoint is). Then on Artemis:
+> **Why the laptop instead of Artemis?** Empirically confirmed
+> 2026-06-30: Harbor's `--env singularity` hardcodes
+> `singularity exec --fakeroot`, and Artemis users have no subuid
+> mappings → the FastAPI server inside the container can never
+> start (`could not use fakeroot: no valid mapping entry`).
+> See `docs/hpc/artemis.md` §"Harbor's --env singularity is BLOCKED".
+> The Singularity path stays scaffolded in this repo
+> (`scripts/pilot/run_pilot_singularity.sh`, `docs/hpc/artemis.md`)
+> in case subuid gets enabled on the cluster — but for now, run on
+> the laptop with `--env docker`, which Just Works.
+
+On your laptop (same machine that ran Phase 1 — Docker is already
+installed):
 
 ```bash
-cd /nfs/turbo/coe-venkvis/$USER/projects/DiffEC
-git pull
+cd ~/DiffEC                       # or wherever your clone lives
+git checkout feat/tb-sci-task
+git pull --ff-only
 
-module load singularity/4.4.1
-uv tool install harbor              # one-time, user-local
+uv tool install harbor            # one-time, user-local
+docker --version                   # confirm Docker is running
 
 # API keys (gitignored — never committed).
 cat > scripts/pilot/.env <<EOF
@@ -155,41 +167,26 @@ GEMINI_API_KEY=AIza…
 EOF
 chmod 600 scripts/pilot/.env
 
-# Request an interactive compute node (12 h to cover the pilot).
-srun -p venkvis-cpu -N 1 --cpus-per-task=16 --mem=32G \
-     -t 12:00:00 --pty bash
-```
-
-When the compute-node shell appears:
-
-```bash
-module load singularity/4.4.1
-cd /nfs/turbo/coe-venkvis/$USER/projects/DiffEC
-
-# === AUTH TO GHCR (images are PRIVATE — Phase 2) ===
-# Create a classic PAT with read:packages scope at
-# https://github.com/settings/tokens, then:
-export SINGULARITY_DOCKER_USERNAME=changwenxu98
-export SINGULARITY_DOCKER_PASSWORD=ghp_xxxxxxxx   # read:packages PAT
-# (If Artemis ships Apptainer rather than Singularity, use the
-#  APPTAINER_DOCKER_USERNAME / APPTAINER_DOCKER_PASSWORD names instead.)
-# Sanity check the pull authenticates before running harbor:
-singularity pull --force /tmp/_authcheck.sif docker://ghcr.io/changwenxu98/diffec-env:v1 \
-    && echo "GHCR auth OK" && rm -f /tmp/_authcheck.sif
-
-# === SMOKE TEST FIRST — verify singularity + images work (~15 min, free) ===
-harbor run --path tasks/physical-sciences/chemistry/concentrated-electrolyte-mass-transport \
-           --env singularity \
-           --agent oracle \
-           --yes
-# Should report reward = 1 at the end. If it doesn't:
-#   - check GHCR auth succeeded (the singularity pull sanity check above)
-#   - check task.toml has docker_image lines pushed to the branch (Phase 3)
-#   - check singularity cache is writable: ls -la $SCRATCH_DIR/singularity_cache
+# === SMOKE TEST FIRST (~15 min, free) ===
+# This uses Docker directly so no GHCR auth is needed — Harbor builds
+# both images locally from environment/Dockerfile + tests/Dockerfile.
+# (You can leave the docker_image = "ghcr.io/…" lines in task.toml or
+# delete them; Docker env prefers the local Dockerfile build either way.)
+harbor run \
+    --path tasks/physical-sciences/chemistry/concentrated-electrolyte-mass-transport \
+    --env docker \
+    --agent oracle \
+    --yes
+# Expect reward = 1. If it doesn't:
+#   - check docker is running (docker ps)
+#   - check disk space (the build is ~6 GB)
+#   - check Dockerfile parses (docker build tasks/.../environment)
 # Don't proceed to the full pilot until the smoke test passes.
 
 # === FULL PILOT (3 agents × 10 trials, ~8 h, $200–500) ===
-bash scripts/pilot/run_pilot_singularity.sh
+# scripts/pilot/run_pilot.sh defaults to --env docker. Optional: run in
+# tmux/screen so it survives terminal disconnects.
+bash scripts/pilot/run_pilot.sh
 
 # === AGGREGATE ===
 uv run python scripts/pilot/aggregate.py \

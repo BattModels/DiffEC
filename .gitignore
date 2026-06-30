@@ -183,3 +183,4 @@ _local_results/
 # Frontier-agent pilot artifacts (API keys, harbor job dirs)
 scripts/pilot/.env
 jobs/
+_local_jobs/
