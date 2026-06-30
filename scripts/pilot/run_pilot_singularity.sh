@@ -5,10 +5,15 @@
 # Prerequisites:
 #   1. `scripts/build_and_push.sh` already ran ONCE on a Docker host;
 #      task.toml now has `docker_image = "ghcr.io/…"` lines for both
-#      [environment] and [verifier.environment] (both images PUBLIC).
-#   2. `harbor` 0.16+ installed: `uv tool install harbor`.
-#   3. `singularity` available: on Artemis, `module load singularity/4.4.1`.
-#   4. scripts/pilot/.env contains the API keys.
+#      [environment] and [verifier.environment].
+#   2. The GHCR images are PRIVATE (they hold the held-out truth), so
+#      export GHCR credentials before running so Singularity can pull:
+#         export SINGULARITY_DOCKER_USERNAME=<ghcr-handle>
+#         export SINGULARITY_DOCKER_PASSWORD=<read:packages PAT>
+#      (Apptainer: use the APPTAINER_DOCKER_USERNAME/PASSWORD names.)
+#   3. `harbor` 0.16+ installed: `uv tool install harbor`.
+#   4. `singularity` available: on Artemis, `module load singularity/4.4.1`.
+#   5. scripts/pilot/.env contains the API keys.
 #
 # Usage:
 #     module load singularity/4.4.1   # Artemis-specific
@@ -50,6 +55,13 @@ if ! grep -q '^docker_image\s*=' "$TASK/task.toml" 2>/dev/null; then
     echo "       Run scripts/build_and_push.sh first, then add the lines"
     echo "       printed at the end of that script."
     exit 2
+fi
+
+# Images are private — warn early if GHCR credentials aren't exported.
+if [ -z "${SINGULARITY_DOCKER_USERNAME:-}${APPTAINER_DOCKER_USERNAME:-}" ]; then
+    echo "WARNING: neither SINGULARITY_DOCKER_USERNAME nor APPTAINER_DOCKER_USERNAME"
+    echo "         is set. The GHCR images are private; the pull will fail with"
+    echo "         'unauthorized'. Export a read:packages PAT first (see header)."
 fi
 
 mkdir -p "$JOBS_DIR" "$SINGULARITY_CACHE"

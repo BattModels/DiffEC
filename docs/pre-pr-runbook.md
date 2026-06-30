@@ -74,29 +74,25 @@ If the build fails on your laptop's architecture (e.g., Apple Silicon),
 the script already uses `--platform linux/amd64` which slows the build
 slightly but produces images that run on the cluster.
 
-## Phase 2 — Laptop: make the images public (1 min, $0)
+## Phase 2 — Keep the images PRIVATE (anti-cheat) — do NOT make public
 
-GHCR packages default to private. Singularity on Artemis won't
-authenticate, so the images need to be public.
+**Decision (2026-06-29):** both images stay **private**. The
+`diffec-tests` image is built with `COPY . /tests/`, so it contains the
+held-out ground truth (`tests/oracle/` solver + `tests/oracle_truth/case_*/truth.npz`).
+Making it public on GHCR would publish the benchmark answers to anyone who
+knows the URL — directly breaking the project's anti-cheat invariant
+("hidden ground truth must never ship alongside the cases"). So we leave
+visibility private and have Singularity on Artemis authenticate instead.
 
-```bash
-# With gh CLI (run on the laptop):
-gh api --method PATCH /user/packages/container/diffec-env/visibility   -f visibility=public
-gh api --method PATCH /user/packages/container/diffec-tests/visibility -f visibility=public
-```
+There is nothing to do on the laptop for this phase. Authentication is
+set up on Artemis in Phase 4 via a `read:packages` PAT and the
+`SINGULARITY_DOCKER_USERNAME` / `SINGULARITY_DOCKER_PASSWORD` env vars.
 
-Or in a browser:
-
-1. Open <https://github.com/your-handle?tab=packages>
-2. Click `diffec-env` → **Package settings** → **Danger Zone** → **Change visibility** → **Public** → type name → confirm
-3. Repeat for `diffec-tests`
-
-Verify public anonymously from the laptop terminal:
+Optional: confirm the images are present (and private) in your GHCR:
 
 ```bash
-docker logout ghcr.io
-docker pull ghcr.io/<you>/diffec-env:v1    # should succeed without auth
-docker pull ghcr.io/<you>/diffec-tests:v1
+gh api /user/packages/container/diffec-env   --jq '.visibility'   # -> "private"
+gh api /user/packages/container/diffec-tests --jq '.visibility'   # -> "private"
 ```
 
 ## Phase 3 — Laptop: edit `task.toml`, commit, push (5 min, $0)
@@ -166,13 +162,24 @@ When the compute-node shell appears:
 module load singularity/4.4.1
 cd /nfs/turbo/coe-venkvis/$USER/projects/DiffEC
 
+# === AUTH TO GHCR (images are PRIVATE — Phase 2) ===
+# Create a classic PAT with read:packages scope at
+# https://github.com/settings/tokens, then:
+export SINGULARITY_DOCKER_USERNAME=changwenxu98
+export SINGULARITY_DOCKER_PASSWORD=ghp_xxxxxxxx   # read:packages PAT
+# (If Artemis ships Apptainer rather than Singularity, use the
+#  APPTAINER_DOCKER_USERNAME / APPTAINER_DOCKER_PASSWORD names instead.)
+# Sanity check the pull authenticates before running harbor:
+singularity pull --force /tmp/_authcheck.sif docker://ghcr.io/changwenxu98/diffec-env:v1 \
+    && echo "GHCR auth OK" && rm -f /tmp/_authcheck.sif
+
 # === SMOKE TEST FIRST — verify singularity + images work (~15 min, free) ===
 harbor run --path tasks/physical-sciences/chemistry/concentrated-electrolyte-mass-transport \
            --env singularity \
            --agent oracle \
            --yes
 # Should report reward = 1 at the end. If it doesn't:
-#   - check images are public (Phase 2)
+#   - check GHCR auth succeeded (the singularity pull sanity check above)
 #   - check task.toml has docker_image lines pushed to the branch (Phase 3)
 #   - check singularity cache is writable: ls -la $SCRATCH_DIR/singularity_cache
 # Don't proceed to the full pilot until the smoke test passes.
@@ -199,7 +206,7 @@ After this, both Definition-of-Done items are met. The PR is unblocked.
 | `gh: command not found` (laptop) | gh CLI missing | `brew install gh` (macOS) / `apt install gh` (Linux) / download from cli.github.com |
 | `docker: command not found` (laptop) | Docker missing | install Docker Desktop |
 | `denied: requested access to the resource is denied` on push | Not authenticated or wrong scope | rerun `gh auth login` ensuring `write:packages` scope, OR generate a PAT with that scope |
-| Singularity pull `unauthorized` | Image still private | redo Phase 2 (visibility = public) |
+| Singularity pull `unauthorized` | GHCR auth not set / PAT lacks read:packages | export `SINGULARITY_DOCKER_USERNAME` + `SINGULARITY_DOCKER_PASSWORD` (read:packages PAT); on Apptainer use the `APPTAINER_` names |
 | `harbor` exits with "no `docker_image` field" | task.toml not updated or not pushed | redo Phase 3, push, then `git pull` on Artemis |
 | Singularity cache permission errors | `$SCRATCH_DIR` not writable | `mkdir -p /tmp/sing_cache && export SINGULARITY_CACHE=/tmp/sing_cache` |
 | Pilot exits with API auth error | API key wrong or env file not loaded | check `scripts/pilot/.env` is present and not empty; re-run |
