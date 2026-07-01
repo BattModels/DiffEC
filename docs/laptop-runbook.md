@@ -40,6 +40,8 @@ Verify the environment:
 
 ```bash
 docker --version && docker info | head -3   # Docker daemon reachable
+docker compose version                       # Compose plugin present (Harbor needs it)
+docker buildx version                        # BuildKit plugin present (Harbor uses it)
 uv --version                                  # uv installed
 ```
 
@@ -47,6 +49,41 @@ uv --version                                  # uv installed
 open Docker Desktop and wait for the whale icon to stop animating.
 Grant any first-launch permission dialogs (network / privileged
 helper). Retry `docker info` — proceed only when it succeeds.
+
+**If `docker compose version` errors "docker: 'compose' is not a docker
+command":** you're using Homebrew's `docker` CLI (no plugins). Install
+the two plugins and symlink them:
+
+```bash
+brew install docker-compose docker-buildx
+mkdir -p ~/.docker/cli-plugins
+ln -sfn "$(brew --prefix)/opt/docker-compose/bin/docker-compose" \
+        ~/.docker/cli-plugins/docker-compose
+ln -sfn "$(brew --prefix)/opt/docker-buildx/bin/docker-buildx" \
+        ~/.docker/cli-plugins/docker-buildx
+docker compose version    # confirm now works
+docker buildx version
+```
+
+(Empirically necessary on `brew` Docker CLI, 2026-07-01. Docker
+Desktop bundles both.)
+
+**Colima VM sizing** — if you use Colima as the Docker runtime, its
+default is 4 CPU / 6 GB, but `task.toml` requests **8 CPU / 16 GB**.
+Container creation will fail with a resource-limit rejection unless
+the VM is resized:
+
+```bash
+# Check current allocation:
+colima list
+
+# If cpu < 8 or memory < 16:
+colima stop
+colima start --cpu 8 --memory 16 --disk 40   # 40 GB disk is plenty for the pilot
+```
+
+(Docker Desktop users: check **Preferences → Resources** and set CPUs
+≥ 8, Memory ≥ 16 GB.)
 
 **If `uv` is missing:**
 ```bash
@@ -64,27 +101,36 @@ harbor --version                              # expect 0.16.x
 ### Step 3. Prepare `task.toml` for local Dockerfile build (~1 min)
 
 `task.toml` currently has two `docker_image = "ghcr.io/…"` lines
-(from commit `e12cff9`) that point at private GHCR images. They
-were added for the (now-blocked) Artemis Singularity path. For the
-smoke test we want Harbor to build from `environment/Dockerfile`
-and `tests/Dockerfile` directly — no GHCR pull, no auth.
+(from commit `e12cff9`, currently committed to the branch) that
+point at private GHCR images. They were added for the (now-blocked)
+Artemis Singularity path. For the smoke test we want Harbor to
+build from `environment/Dockerfile` and `tests/Dockerfile` directly
+— no GHCR pull, no auth.
 
-**Recommended:** stash the lines for the duration of the smoke test
-(they'll come back with `git stash pop`):
+Because the lines are *committed* (not a working-tree modification),
+`git stash push` is a no-op. Use in-place edit + `git checkout` to
+restore afterward.
 
 ```bash
-git stash push -m "PILOT-ONLY docker_image lines (temp for smoke test)" \
-    tasks/physical-sciences/chemistry/concentrated-electrolyte-mass-transport/task.toml
+TASK=tasks/physical-sciences/chemistry/concentrated-electrolyte-mass-transport
+
+# Delete the two docker_image lines and the [verifier.environment]
+# section. Edit with your editor of choice, or use this sed one-liner
+# (macOS BSD sed syntax; on Linux drop the '' after -i):
+sed -i '' -e '/^# PILOT-ONLY/,/^docker_image/d' \
+          -e '/^\[verifier\.environment\]/,/^docker_image/d' "$TASK/task.toml"
 
 # Verify:
-grep -c '^docker_image' \
-    tasks/physical-sciences/chemistry/concentrated-electrolyte-mass-transport/task.toml
-# Expected output: 0
+grep -c '^docker_image' "$TASK/task.toml"        # expect 0
+grep -c '^\[verifier\.environment\]' "$TASK/task.toml"  # expect 0
 ```
 
-If it prints anything other than `0`, the stash didn't take —
-inspect the file manually and remove any `docker_image = "…"` lines
-before proceeding.
+If either grep prints > 0, open `$TASK/task.toml` in an editor and
+remove the offending lines manually.
+
+**Remember to restore after the smoke test** (Step 5) with
+`git checkout -- $TASK/task.toml` — a single command that puts the
+file back to its committed state, `docker_image` lines intact.
 
 ### Step 4. Run the oracle smoke test (~15 min, free)
 
@@ -132,7 +178,7 @@ If the smoke test passed:
 ```bash
 # Restore the PILOT-ONLY docker_image lines (they're still valuable
 # for the fallback Singularity path if subuid ever lands on Artemis).
-git stash pop
+git checkout -- tasks/physical-sciences/chemistry/concentrated-electrolyte-mass-transport/task.toml
 
 # Working tree should be clean now:
 git status
@@ -144,9 +190,9 @@ Then **stop here** and tell the user:
 > Mean = 1.000. DoD #2 is satisfied. Ready to run the full pilot when
 > API keys are available (see Part 2 below).
 
-If the smoke test FAILED after basic troubleshooting, restore the
-task.toml (`git stash pop`) and report the failure to the user with
-the last 50 lines of the smoke-test log.
+If the smoke test FAILED after basic troubleshooting, restore
+task.toml (`git checkout -- tasks/.../task.toml`) and report the
+failure to the user with the last 50 lines of the smoke-test log.
 
 ### Step 6. STOP. Wait for the user.
 
