@@ -58,8 +58,8 @@ case_gen/                           # dev-only; not in the upstream PR
 ├── configs/
 │   ├── case_1.yaml                 # NE-valid
 │   ├── case_2.yaml                 # NE-deviates
-│   ├── case_3.yaml                 # NE-wrong-sign
-│   └── case_4.yaml                 # multi-modal
+│   ├── case_3.yaml                 # NE-wrong-sign (mid c)
+│   └── case_4.yaml                 # NE-wrong-sign (high c)
 ├── generate.py                     # configs → environment/data/cases/ + tests/oracle_truth/
 └── writers.py                      # data.h5 / params.json / formalism.md emitters
 

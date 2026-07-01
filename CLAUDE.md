@@ -23,7 +23,7 @@ designs, progress logs, and HPC reference material go in `docs/`:
   - `plan/oracle-spec.md` — moving-frame PDE solver spec (frame, BCs, IC, sign conventions, numerical scheme)
   - `plan/verifier-spec.md` — 5 checks, tolerance feasibility argument, anti-cheat self-consistency, `test.sh`/`reward.txt` wrapper
 - `docs/progress/` — what we tried, outcomes, lessons learned
-  - `progress/key-facts.md` — non-obvious gotchas (moving vs lab frame, sign of v₀, t⁺⁰_NE inversion, multi-modality)
+  - `progress/key-facts.md` — non-obvious gotchas (moving vs lab frame, sign of v₀, t⁺⁰_NE inversion, case_4 basin-trap-intent postmortem)
 - `docs/session.md` — running experience notebook (gitignored, updated every work chunk)
 - `docs/hpc/artemis.md` — Artemis cluster + Slurm reference (oracle generation may use a CPU node)
 
@@ -81,7 +81,7 @@ Ship a complete, mergeable Harbor task that:
 - **Case 1 (NE-valid):** weak ion-solvent correlation; `t⁺⁰ > 0` everywhere; lab-frame agents pass.
 - **Case 2 (NE-deviates):** moderate correlation; signs agree but magnitudes diverge; lab-frame agents fail check #1 or #5.
 - **Case 3 (NE-wrong-sign):** Steinrück-2020-like sign flip at high c; lab-frame agents fail catastrophically; the headline case.
-- **Case 4 (multi-modal):** well-separated `+t⁺⁰` and `−t⁺⁰` basins; single-start optimization lands wrong a substantial fraction of the time.
+- **Case 4 (NE-wrong-sign, high c):** deeply negative `t⁺⁰` at higher concentration (c_grid ≈ [2.93, 3.20], `t⁺⁰` ∈ [-0.20, -0.18]). Companion to case 3; lab-frame agents fail catastrophically on checks #2 and #6. Originally scoped as a multi-modal basin trap but the v-data-weighted joint inverse reliably finds the correct basin from a literature-prior init.
 
 ## Design Constraints
 

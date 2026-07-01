@@ -1,22 +1,27 @@
-# Case 4 — Multi-modal (the basin trap).
+# Case 4 — NE-wrong-sign at high concentration.
 #
 # Regime intent (docs/plan/case-design.md §"Case 4"):
-#   A loss landscape with two well-separated basins:
-#   - "Physically correct" basin: deeply negative t+0 throughout c_grid.
-#   - "Lab-frame-like" basin: positive t+0 (fits c_data plausibly but
-#     mispredicts v_data).
-#   Single-start BFGS from a literature-prior init (t+0 ~ +0.3) lands
-#   in the wrong basin a substantial fraction of the time. Multi-start
-#   with seeds spanning negative-positive resolves this.
+#   Companion to case_3 at higher concentration. True t+0(c) is deeply
+#   negative throughout c_grid ([-0.20, -0.18] in c_grid [2.93, 3.20]),
+#   so lab-frame agents (which structurally recover positive t+0_NE)
+#   fail catastrophically on check #2 and check #6.
 #
-# Discrimination vs case_3: case_3 has moderate negative t+0 (truth in
-# [-0.31, -0.16]) which BFGS reaches from +0.30 init. Case_4 pushes
-# the negative magnitude further (truth in [-0.45, -0.28]) and uses a
-# higher current so the basin-B "literature" fit is a deeper local
-# minimum.
+# Originally scoped as a "multi-modal basin trap" for single-start
+# BFGS optimization: two well-separated basins (positive-t+0 lab-frame
+# vs negative-t+0 moving-frame) with the wrong basin near a
+# literature-prior init. In practice, our reference solver's joint
+# c+v inverse reliably finds the correct negative basin from a
+# +0.30 init — the trap does not materialize with v_data-weighted
+# joint fitting. Renamed to reflect what the case actually tests.
+# See docs/plan/case-design.md §"Case 4" and docs/session.md
+# (2026-06-25) for the design-vs-actual story.
+#
+# Discrimination vs case_3:
+# - case_3: c_init=2.5, c_grid [2.42, 2.69], V_bar override 2.5e-4.
+# - case_4: c_init=3.0, c_grid [2.93, 3.20], V_bar rho-derived (~1.32e-4).
 
 case_id: case_4
-description: "Multi-modal basin trap: deeply negative t+0; single-start from positive init misses."
+description: "NE-wrong-sign at high c: deeply negative t+0 throughout c_grid; lab-frame agents fail checks #2/#6 catastrophically."
 seed: 45678
 
 # --- Geometry ----------------------------------------------------------
