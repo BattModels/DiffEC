@@ -159,7 +159,12 @@ RESULTS_DIR=./_local_results uv run pytest "$TASK/tests/test_outputs.py" -v
 harbor run -p "$TASK" -a oracle           # must return reward = 1
 ```
 
-For the frontier-agent pilot run, see `docs/plan/build-and-run.md` §7.
+For the frontier-agent pilot run, the authoritative laptop-side
+driver is **`docs/laptop-runbook.md` Part 2** (auth setup, tmux
+launch, aggregate). `scripts/pilot/README.md` is the per-script auth
+reference; both cover subscription auth (Claude Max/Pro, ChatGPT
+Plus/Pro, Gemini free tier) as the primary path plus paid API keys
+as fallback. `docs/plan/build-and-run.md` §7 has historical context.
 
 ## Code Style & Conventions
 

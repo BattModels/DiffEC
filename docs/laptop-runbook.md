@@ -203,32 +203,96 @@ pilot" and confirms the three keys are in `scripts/pilot/.env`.
 
 ---
 
-## Part 2 — Full pilot (LATER; gated on user go-ahead + API keys)
+## Part 2 — Full pilot (LATER; gated on user go-ahead + auth setup)
 
 **Prerequisites for this part:**
 
 - Part 1 (smoke test) completed successfully.
-- User has confirmed API keys are ready.
-- `scripts/pilot/.env` exists with three lines:
-  ```
-  ANTHROPIC_API_KEY=sk-ant-...
-  OPENAI_API_KEY=sk-...
-  GEMINI_API_KEY=AIza...
-  ```
-  with mode `600` (`chmod 600 scripts/pilot/.env`).
+- User has confirmed auth is ready (subscription OR paid API key
+  per agent — see Step 6b below).
+- `scripts/pilot/.env` exists and is `chmod 600`.
 
-Confirm all three before starting:
+The full auth contract is documented in `scripts/pilot/README.md`
+§"Pre-flight". Summary: each of the three agents accepts either a
+paid API key or the user's existing subscription (Claude Max/Pro,
+ChatGPT Plus/Pro, Gemini free tier). You can mix modes per agent —
+each Harbor adapter picks its highest-priority available auth.
+
+### Step 6b — one-time auth setup on this laptop (~10 min, once)
+
+**Mode A — subscription auth (recommended, ~$0 marginal).**
+
+Prep the host CLIs first (all three save state into `$HOME`):
+
+```bash
+# 1. Claude Code — prints an sk-ant-oat01-... OAuth token to stdout.
+#    You paste this token into .env below (adapter has no ~/.claude mount).
+claude setup-token
+# 2. Codex — browser flow to ChatGPT Plus/Pro.
+codex login
+test -f ~/.codex/auth.json && echo "codex auth OK"
+# 3. Gemini CLI — start interactively, pick "Login with Google".
+gemini    # then quit after login completes
+test -f ~/.gemini/oauth_creds.json && echo "gemini auth OK"
+```
+
+Then write `scripts/pilot/.env`:
+
+```
+CLAUDE_CODE_OAUTH_TOKEN=<paste token from step 1>
+CLAUDE_FORCE_OAUTH=1
+CODEX_FORCE_AUTH_JSON=1
+GEMINI_FORCE_OAUTH=1
+```
+
+**Mode B — paid API keys (fallback, ~$200–500 pilot).**
+
+```
+ANTHROPIC_API_KEY=sk-ant-...
+OPENAI_API_KEY=sk-...
+GEMINI_API_KEY=AIza...
+```
+
+Get keys from [Anthropic Console](https://console.anthropic.com/),
+[OpenAI Platform](https://platform.openai.com/api-keys),
+[Google AI Studio](https://aistudio.google.com/apikey).
+
+**Mode C — mix.** Combine A and B, e.g., subscription for Claude/Gemini,
+paid key for Codex if your ChatGPT plan is too rate-limited.
+
+Then lock down the file:
+
+```bash
+chmod 600 scripts/pilot/.env
+```
+
+Verify auth resolves for each agent before launching (regardless of mode):
 
 ```bash
 [ -f scripts/pilot/.env ] || { echo "MISSING .env — STOP"; exit 1; }
-[ "$(stat -c '%a' scripts/pilot/.env 2>/dev/null || stat -f '%p' scripts/pilot/.env | tail -c 4)" = "600" ] \
-    || echo "WARNING: .env should be chmod 600"
-grep -c '^ANTHROPIC_API_KEY=' scripts/pilot/.env    # expect 1
-grep -c '^OPENAI_API_KEY='    scripts/pilot/.env    # expect 1
-grep -c '^GEMINI_API_KEY='    scripts/pilot/.env    # expect 1
+
+# Perms — GNU stat first, BSD stat fallback (macOS).
+perms=$(stat -c '%a' scripts/pilot/.env 2>/dev/null || stat -f '%A' scripts/pilot/.env)
+[ "$perms" = "600" ] || echo "WARNING: .env should be chmod 600 (found $perms)"
+
+# Each agent needs at least one of its two auth env vars set in .env.
+# Mode A subscription requires the host auth file to also exist.
+grep -qE '^(CLAUDE_CODE_OAUTH_TOKEN|ANTHROPIC_API_KEY)=' scripts/pilot/.env \
+    || echo "MISSING claude-code auth"
+grep -qE '^(CODEX_FORCE_AUTH_JSON|OPENAI_API_KEY)='       scripts/pilot/.env \
+    || echo "MISSING codex auth"
+grep -qE '^(GEMINI_FORCE_OAUTH|GEMINI_API_KEY)='          scripts/pilot/.env \
+    || echo "MISSING gemini auth"
+
+# Host-file existence check for subscription mode:
+grep -q '^CODEX_FORCE_AUTH_JSON=1'  scripts/pilot/.env \
+    && ! [ -f ~/.codex/auth.json ]        && echo "MISSING ~/.codex/auth.json"
+grep -q '^GEMINI_FORCE_OAUTH=1'     scripts/pilot/.env \
+    && ! [ -f ~/.gemini/oauth_creds.json ] && echo "MISSING ~/.gemini/oauth_creds.json"
 ```
 
-If anything is missing, STOP and ask the user.
+If any check prints `MISSING`, STOP and either re-run the login flow
+in Step 6b Mode A, or fall back to Mode B for that agent.
 
 ### Step 7. Launch the pilot in tmux (~8 h wall, $200–500)
 
@@ -297,8 +361,11 @@ number.
 | `harbor: command not found` after install | uv tool bin not on PATH | Run `uv tool update-shell` and reopen shell, or use `~/.local/bin/harbor` directly |
 | Smoke test hangs > 30 min | Slow network or huge JAX download | Wait longer (up to 60 min); if truly stuck, `Ctrl-C` and retry |
 | Smoke test Mean = 0.000 | Verifier failed; the reference solution didn't produce a valid `transport.json` | Read `jobs/*/…/results.json` and `verifier/pytest.log`; report specifics to user |
-| Pilot exits with API auth error | Wrong or expired API key | Verify `scripts/pilot/.env` values with the user; keys are provider-specific format |
-| Pilot exits with rate-limit error | Provider rate limits | Lower `N_CONCURRENT` to 1 in `scripts/pilot/run_pilot.sh` env; retry |
+| Pilot exits with API auth error (paid mode) | Wrong or expired API key | Verify `scripts/pilot/.env` values with the user; keys are provider-specific format |
+| Pilot exits with auth error on `claude-code` (subscription mode) | `CLAUDE_CODE_OAUTH_TOKEN` expired or malformed | Re-run `claude setup-token` on host, replace the token in `.env`, retry |
+| Pilot exits with auth error on `codex` (subscription mode) | `~/.codex/auth.json` missing or ChatGPT session expired | Re-run `codex login` on host; adapter re-uploads the fresh file on next `harbor run` |
+| Pilot exits with auth error on `gemini-cli` (subscription mode) | `~/.gemini/oauth_creds.json` missing or expired | Re-run `gemini` login flow on host; adapter re-uploads on next `harbor run` |
+| Pilot exits with rate-limit error | Provider rate limits (esp. ChatGPT Plus) | Lower `N_CONCURRENT` to 1 in `scripts/pilot/run_pilot.sh` env; if a specific agent throttles, comment it out of the `AGENTS` array and rerun; retry |
 | Cost exceeds budget mid-pilot | 3-agent × 10-trial default too much | Cancel with `tmux attach -t diffec-pilot`, `Ctrl-C`; user can then rerun with `N_ATTEMPTS=3` |
 
 ## Appendix — What NOT to do
@@ -310,5 +377,9 @@ number.
   `origin` (your fork).
 - Do NOT commit `scripts/pilot/.env`, `jobs/`, or `_local_jobs/`
   (already `.gitignore`d).
+- Do NOT copy `~/.codex/auth.json` or `~/.gemini/oauth_creds.json`
+  into the repo. The Harbor adapters *upload* them from `$HOME`
+  directly; there is no need to stage them anywhere else. Leaving
+  auth files inside the repo tree risks committing bearer tokens.
 - Do NOT run the full pilot without explicit user go-ahead. It
-  spends real money.
+  may cost real money (paid API keys) or burn subscription quota.
