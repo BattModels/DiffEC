@@ -184,3 +184,6 @@ _local_results/
 scripts/pilot/.env
 jobs/
 _local_jobs/
+
+# Mock-exam trial outputs — one harbor job dir per single-trial sanity run
+mock_exam/results/

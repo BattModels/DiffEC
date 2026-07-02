@@ -11,17 +11,25 @@ kept slim to avoid the two files drifting.
 ## What you're most likely being asked to do
 
 If the user has opened you on the laptop, they almost certainly want
-to drive the frontier-agent pilot (ADR-0008). The self-contained
-runbook is:
+to drive one of two things:
 
-- **`docs/laptop-runbook.md`** — laptop-side end-to-end procedure.
-  Part 1 is the Docker + Harbor smoke test (DoD #2, already passed
-  on 2026-07-01). Part 2 is the 3-agent × 10-trial pilot with a
-  Step 6b for one-time auth setup. Both parts have failure/recovery
-  tables in the appendix.
-- **`scripts/pilot/README.md`** — per-script reference for the pilot
-  driver. Covers subscription auth (Claude Max/Pro, ChatGPT Plus/Pro,
-  Gemini free tier) and paid-API-key fallback contracts per adapter.
+1. **Mock exam** (`mock_exam/README.md`) — pre-submission sanity
+   check. Runs the same 3 frontier agents (Claude Opus via Claude
+   Code, GPT-5 via Codex, Gemini 2.5 via Gemini CLI) for **1 trial
+   each**, using Harbor's `environment_mode="separate"` container
+   isolation to guarantee the agent sees only what a real TB-Science
+   evaluator would see. Do this BEFORE the full pilot. `bash
+   mock_exam/show_agent_view.sh` prints the exact file surface the
+   agent sees; `bash mock_exam/inspect_container.sh` starts an
+   interactive shell inside the agent image so you can confirm by
+   hand.
+2. **Full pilot** (`scripts/pilot/README.md` + `docs/laptop-runbook.md`
+   Part 2) — 10 trials × 3 agents to measure solve-rate distribution
+   per ADR-0008. Only after mock trials confirm the loop works.
+
+Auth setup is shared between both (see `docs/laptop-runbook.md`
+Step 6b): subscription (Claude Max/Pro, ChatGPT Plus/Pro, Gemini
+free tier) or paid API key.
 
 If the user asks for anything else (case designs, verifier, oracle,
 PR prep), route to `CLAUDE.md` → `docs/plan/` and follow that.

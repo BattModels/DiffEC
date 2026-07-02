@@ -76,6 +76,13 @@ Colima sizing, tmux launch, aggregate + commit), see
 `docs/laptop-runbook.md` Part 2. That file is the authoritative
 runbook; this README is the per-script reference.
 
+Before this pilot, do the **mock exam** (`mock_exam/README.md`) —
+single-trial-per-agent sanity check with a visible agent-view
+inspector. That confirms Harbor's container isolation actually
+keeps our reference solver / oracle / docs / CLAUDE.md out of the
+agent's view, and that auth + container-build works end-to-end.
+Only run this pilot after the mock trials complete without crashes.
+
 ## Run the pilot
 
 ```bash

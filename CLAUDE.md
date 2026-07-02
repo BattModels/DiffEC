@@ -159,12 +159,21 @@ RESULTS_DIR=./_local_results uv run pytest "$TASK/tests/test_outputs.py" -v
 harbor run -p "$TASK" -a oracle           # must return reward = 1
 ```
 
-For the frontier-agent pilot run, the authoritative laptop-side
-driver is **`docs/laptop-runbook.md` Part 2** (auth setup, tmux
-launch, aggregate). `scripts/pilot/README.md` is the per-script auth
-reference; both cover subscription auth (Claude Max/Pro, ChatGPT
-Plus/Pro, Gemini free tier) as the primary path plus paid API keys
-as fallback. `docs/plan/build-and-run.md` §7 has historical context.
+For the frontier-agent pilot run, two entry points depending on
+scope:
+
+- **Mock exam** (single-trial-per-agent sanity check, run BEFORE
+  the pilot): `mock_exam/README.md`. Verifies that Harbor's
+  `environment_mode="separate"` container isolation actually keeps
+  our reference solution, oracle, docs, and CLAUDE.md out of the
+  agent's view — a real cold-start attempt.
+- **Full pilot** (10-trial × 3-agent solve-rate measurement per
+  ADR-0008): `docs/laptop-runbook.md` Part 2 is the authoritative
+  driver; `scripts/pilot/README.md` is the per-script reference.
+  Both cover subscription auth (Claude Max/Pro, ChatGPT Plus/Pro,
+  Gemini free tier) + paid-API-key fallback.
+
+`docs/plan/build-and-run.md` §7 has historical context.
 
 ## Code Style & Conventions
 

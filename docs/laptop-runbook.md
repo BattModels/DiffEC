@@ -294,6 +294,38 @@ grep -q '^GEMINI_FORCE_OAUTH=1'     scripts/pilot/.env \
 If any check prints `MISSING`, STOP and either re-run the login flow
 in Step 6b Mode A, or fall back to Mode B for that agent.
 
+### Step 6c — mock exam first (~30 min per agent, one trial each)
+
+**Do NOT skip this before running Step 7.** The mock exam is a
+pre-submission sanity check: it runs the same agent × task loop as
+the full pilot but with only 1 trial per agent, and it lets you
+visually inspect what the agent's container sees so you trust the
+downstream solve-rate numbers.
+
+The self-contained runbook lives in `mock_exam/README.md`. Summary:
+
+```bash
+# 1. Print the exact file surface the agent sees (offline, ~5 sec):
+bash mock_exam/show_agent_view.sh
+
+# 2. Optional — build the agent image and shell into it (~5 min):
+bash mock_exam/inspect_container.sh    # exit when done
+
+# 3. Run one trial per agent (~30 min each, sequential):
+bash mock_exam/run_trial.sh claude-code claude-opus-4-7
+bash mock_exam/run_trial.sh codex       gpt-5
+bash mock_exam/run_trial.sh gemini-cli  gemini-2.5-pro
+```
+
+Read `reward.txt` for each result. Any of {0, 1} is a valid outcome
+for the mock — we're checking that the loop runs end-to-end, not
+the solve rate. What matters: **no crashes on setup**, **no evidence
+of context leak** (check `agent/session.log` for references to files
+we didn't ship in `environment/`).
+
+If any of the three crashes, fix that before Step 7 — a crash in
+the mock will also crash 10× in the pilot.
+
 ### Step 7. Launch the pilot in tmux (~8 h wall, $200–500)
 
 Run inside `tmux` (or `screen`) so it survives terminal disconnects:
