@@ -103,6 +103,47 @@ self_consistency             4/4        1/4        4/4
 TOTAL / 28                 21/28      9/28       13/28
 ```
 
+### v4 — Opus × 1 after §3.3.1 worked example added (2026-07-06)
+
+Single-arm rerun to test whether adding a worked flux-decomposition
+example to `formalism.md` (commit `9acb775`) lifts Opus's
+`test_flux_decomposition` pass rate above 0/4.
+
+| Arm | Model | Wall | Exit | Outputs | Verifier | Notes |
+|---|---|---|---|---|---|---|
+| `trial_opus_1` | `--model opus` | 29 min | 0 clean | 4/4 | **22/28** | New best. `test_flux_decomposition` 2/4 (up from 0/4 v3 mean). |
+
+**v4 per-check (compared to v2 Opus and v3 mean):**
+
+```
+test                        v4     v2 Opus    v3 mean
+schema                     4/4       4/4       3.4/4
+D                          2/4       2/4       0.4/4
+tp0                        3/4       3/4       0.6/4
+regime                     3/4       3/4       1.8/4
+velocity_rmse              4/4       4/4       3.4/4
+flux_decomposition        2/4       1/4       0.0/4   ← the intended lift
+self_consistency          4/4       4/4       1.0/4
+─────────────────────────────────────────────────────
+TOTAL / 28                22/28    21/28      10.6/28
+```
+
+**Which flux samples now pass:** case_2 and case_4 pass check #5;
+case_1 and case_3 still fail. The lift is real but partial —
+worked example helps agents get the units right when they engage,
+but doesn't force it.
+
+**Session-log evidence the fix landed.** Opus explicitly cited
+"the exact formulas from §3.3" when describing its flux
+decomposition step. Its case_4 t⁺⁰ ≈ −0.18 matches the oracle
+truth (−0.18 to −0.20 across c_grid[2.93, 3.20]); its case_3
+t⁺⁰ ≈ −0.37 is closer to truth (~−0.20) than any v3 arm (all of
+which reported t⁺⁰ ≈ −0.8).
+
+**Isolation:** clean transcript grep (no repo mentions).
+
+Archived to `_local_jobs/mock_pilot_2026-07-06/` (568 KB).
+
 ### v3 — Opus × 5 + o3 (2026-07-05)
 
 5-trial mini-pilot on the best-performing arm (Opus) to estimate the
@@ -165,6 +206,7 @@ trials against these case bundles.
 | v3 all 5 (incl. partial) | 0/5 | 0 % | 0.0 – 43.4 % | 37.9 % |
 | v3 clean 4 (excl. opus_4 partial) | 0/4 | 0 % | 0.0 – 49.0 % | 44.6 % |
 | v2 + v3 combined (6 Opus) | 0/6 | 0 % | 0.0 – 39.0 % | 44.0 % |
+| v2 + v3 + v4 (7 Opus) | 0/7 | 0 % | 0.0 – 35.4 % | 47.4 % |
 
 **Reading the numbers.** Solve rate is 0/N across all Opus samples;
 Wilson upper bound at N=6 is ~39 %, which is consistent with
@@ -301,16 +343,15 @@ Full raw transcripts + outputs preserved at
 5. **OpenAI second arm needs paid API-key path.** ChatGPT
    subscription exposes only `gpt-5.5` via Codex CLI (probed
    gpt-5, gpt-5-mini, o3, o4-mini — all 400).
-6. **Flux decomposition is uniformly hard** (0/4 across all 5 v3
-   Opus arms, 1/4 for v2 opus at best). Suggests a real convention
-   friction — worth considering a worked numeric example in
-   `formalism.md` §"Flux decomposition" if TB-Science reviewers
-   flag this too. **Follow-up:** worked example added to
-   `formalism.md` §3.3.1 in commit `9acb775` — inputs table with
-   unit conversions, step-by-step J_diff/J_mig/J_conv computation,
-   sign conventions, common-pitfalls list. Effect on pilot solve
-   rate is untested; a v4 round would be needed to see whether
-   the extra clarity lifts flux_decomposition pass rate above 0/4.
+6. **Flux decomposition was uniformly hard through v3** (0/4 across
+   all 5 v3 Opus arms, 1/4 for v2 opus at best). Worked example
+   added to `formalism.md` §3.3.1 in commit `9acb775`. **v4
+   confirmed the fix landed**: single Opus arm scored
+   `test_flux_decomposition` 2/4 (case_2 and case_4 passing), and
+   overall score of 22/28 — a new best. Case_1 and case_3 still
+   fail check #5, so the lift is real but partial; agents that
+   engage with §3.3.1 get units right on some samples but the
+   worked example doesn't force it universally.
 
 ## Next steps
 
