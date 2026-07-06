@@ -305,7 +305,12 @@ Full raw transcripts + outputs preserved at
    Opus arms, 1/4 for v2 opus at best). Suggests a real convention
    friction — worth considering a worked numeric example in
    `formalism.md` §"Flux decomposition" if TB-Science reviewers
-   flag this too.
+   flag this too. **Follow-up:** worked example added to
+   `formalism.md` §3.3.1 in commit `9acb775` — inputs table with
+   unit conversions, step-by-step J_diff/J_mig/J_conv computation,
+   sign conventions, common-pitfalls list. Effect on pilot solve
+   rate is untested; a v4 round would be needed to see whether
+   the extra clarity lifts flux_decomposition pass rate above 0/4.
 
 ## Next steps
 
