@@ -224,7 +224,7 @@ The task is mergeable when:
 3. `docs/plan/case-design.md` documents each case's true parameter functions, noise level, concentration range, and the failure mode it is designed to catch — and the reference-solution margins on each check are recorded in `docs/progress/key-facts.md`.
 4. The bundled `environment/data/cases/case_X/` directories contain only what the agent should see; no leaked ground-truth files. The verifier image holds `tests/oracle_truth/` and `tests/oracle/` but never reaches the agent (Harbor's separate-container enforcement).
 5. The held-out oracle parameters are demonstrably different from any published values for the PEO-LiTFSI system (Steinrück 2020, Pesko 2017, DiffEC paper, DiffEC repo results).
-6. The frontier-agent pilot (Opus 4.7 + GPT-5 + Gemini 2.5) returns a solve rate in the proposal's 10–20 % band, recorded in `docs/progress/pilot_run.md`.
+6. The frontier-agent pilot returns solve-rate evidence consistent with the proposal's 10–20 % band, recorded in `docs/progress/pilot_run.md`. **Interim status** (2026-07-06): direct-CLI mock pilot on Artemis ran 11 Opus + 2 Sonnet + 1 gpt-5.5 attempts, with 0 solves across all attempts (Wilson 95 % CI 0.0-25.9 % on N=11 Opus), mean check-pass 45–57 % depending on subset. This is consistent with the 10–20 % band but does not confirm it; the Harbor-driven 3-agent × 10-trial run from `docs/laptop-runbook.md` Part 2 remains the authoritative check.
 7. PR title `[TASK: Chemistry] …` references discussion #335; body includes `harbor analyze` output and an Oracle-pass screenshot; upstream CI (static checks, rubric review, execution checks, three-pass human review) is green.
 
 ## Experience Notebook
