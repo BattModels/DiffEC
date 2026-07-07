@@ -47,7 +47,7 @@ family:
 
 ## Pinned case parameters (2026-06-26)
 
-| Parameter | case_1 (NE-valid) | case_2 (NE-deviates) | case_3 (NE-wrong-sign) | case_4 (high-c, basin-trap intent) |
+| Parameter | case_1 (NE-valid) | case_2 (NE-deviates) | case_3 (NE-wrong-sign) | case_4 (NE-wrong-sign, high c) |
 | --- | --- | --- | --- | --- |
 | seed | 12345 | 23456 | 34567 | 45678 |
 | `c_init` (mol/L) | 0.6 | 1.25 | 2.5 | 3.0 |
@@ -179,21 +179,32 @@ ADR-0004: max |Δt⁺⁰_lit| = 0.17 (≥ 2× the verifier threshold).
 
 ---
 
-## Case 4 — High-c deeply-negative-`t⁺⁰` (basin-trap intent)
+## Case 4 — NE-wrong-sign at high concentration
 
-**Regime intent (original).** A loss landscape with two well-separated
-basins so single-start BFGS misses the true (negative) basin a
+**Regime intent.** Companion to case_3 at a different concentration
+regime. True `t⁺⁰(c)` is deeply negative throughout c_grid
+([-0.20, -0.18]); lab-frame agents (which structurally recover
+positive `t⁺⁰_NE`) fail catastrophically on check #2
+(`|t⁺⁰_lab − t⁺⁰_true|` worst = 0.42, 8× threshold) and check #6
+(self-consistency RMSE/max = 0.26, 1.7× threshold). Uses realistic
+(rho-derived) `V̄` instead of the case_3 override, so it's the
+"cleanest" NE_wrong_sign test of the four.
+
+**Original design intent (dropped).** The case was originally scoped
+as a "multi-modal basin trap": a loss landscape with two
+well-separated basins where single-start BFGS from a literature-prior
+`t⁺⁰ ≈ +0.30` init would land in the wrong (positive) basin a
 substantial fraction of the time.
 
-**Actual.** The reference solver's joint inverse (fitting c_data +
-v_data jointly) reliably finds the correct negative basin from a
-literature-prior init (+0.30 constant). The case as designed
-**does not** exhibit a basin trap for our solver. It effectively
-duplicates case_3's discrimination (lab-frame agents fail) at a
-different concentration regime. Honest caveat documented in
-`docs/session.md` (2026-06-25 entry). A true basin-trap design
-would require either a weaker v-data weight in the loss or a more
-intricate non-monotone `t⁺⁰(c)` shape; deferred.
+**Why it was renamed.** The reference solver's v-data-weighted joint
+inverse reliably finds the correct negative basin from the same
++0.30 init — the `v_data` term breaks the (D, t⁺⁰) degeneracy
+before BFGS can settle in a plausible-but-wrong positive basin.
+The trap does not materialize with our loss. A real basin trap
+would require either a weaker `v_data` weight or a more intricate
+non-monotone `t⁺⁰(c)` shape; the reframing keeps the case honest
+about what it currently tests. Documented in
+`docs/session.md` (2026-06-25 entry) with the empirical result.
 
 **Final design (`case_4.yaml`).** `c_init = 3.0`, c_grid [2.93, 3.20]
 (narrowed from initial [2.70, 3.30]), peak current 32 A/m², `V̄`

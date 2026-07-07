@@ -67,19 +67,21 @@ cat <<EOF
 Build and push complete.
 
 Next steps:
-1) Make both images PUBLIC so Singularity on Artemis can pull
-   them anonymously (no token needed inside the cluster):
+1) KEEP BOTH IMAGES PRIVATE. The tests image bundles the held-out
+   ground truth (tests/oracle/, tests/oracle_truth/case_*/truth.npz)
+   via COPY . /tests/, so publishing it would leak the benchmark
+   answers — directly breaking the anti-cheat invariant.
 
-   gh api --method PATCH \\
-       /user/packages/container/diffec-env/visibility \\
-       -f visibility=public
-   gh api --method PATCH \\
-       /user/packages/container/diffec-tests/visibility \\
-       -f visibility=public
+   No further action on visibility. Singularity on Artemis pulls
+   under authentication using a read:packages PAT exported as
+   SINGULARITY_DOCKER_USERNAME / SINGULARITY_DOCKER_PASSWORD
+   (see docs/pre-pr-runbook.md Phase 4).
 
-   (Or open https://github.com/$GHCR_USER_LC?tab=packages
-   in a browser, click each package, Package settings → Change
-   visibility → Public.)
+   Optional sanity check that they exist and are private:
+
+   gh api /user/packages/container/diffec-env   --jq '.visibility'
+   gh api /user/packages/container/diffec-tests --jq '.visibility'
+   # both should print "private"
 
 2) Add these two lines to task.toml:
 
@@ -90,10 +92,9 @@ Next steps:
    [verifier.environment]
    docker_image = "$TESTS_IMAGE"
 
-   Note: the Dockerfile-based fields are still respected by the
-   Docker env mode (Harbor's upstream-default), so keep them too —
-   the two modes coexist. \`docker_image\` is just an additional
-   hint that Singularity uses.
+   These are PILOT-ONLY: they point at the personal namespace.
+   REVERT both docker_image lines before opening the upstream PR
+   (upstream builds from the Dockerfiles, not pre-built images).
 
 3) Commit the task.toml change and the new images are ready
    for the pilot:

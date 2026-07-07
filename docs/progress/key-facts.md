@@ -123,17 +123,24 @@ was little extra information for BFGS to extract about the *shape* of
   `tp0(c)` shape for the easy case; or boost peak current; or reduce
   noise σ. ADR-0005's 50%-margin audit will force one of these.
 
-### Multi-modal basin separation in Case 4
-Case 4 is intentionally constructed so a single-start optimization
-from a uniform-`t⁺⁰` initial condition lands in a positive-`t⁺⁰` basin
-that fits `c_data` to within a small but nonzero residual, but predicts
-the wrong `v_data` (and therefore fails checks #4 and #5). The "right"
-basin requires either physical intuition (`t⁺⁰ < 0` at high c) or
-multi-start with seeds that probe negative values.
+### Case 4's basin trap didn't materialize (2026-06-25)
+Case 4 was originally scoped as a multi-modal basin trap: single-start
+BFGS from a literature-prior `t⁺⁰ ≈ +0.30` init would land in a
+positive-`t⁺⁰` basin fitting `c_data` plausibly but mispredicting
+`v_data`. In practice, our reference solver's **v-data-weighted
+joint inverse** breaks the (D, t⁺⁰) degeneracy well before BFGS can
+settle in a plausible-but-wrong basin — from a +0.30 init, joint c+v
+optimization reliably lands in the correct deeply-negative basin.
 
-**Calibration target:** with single-start BFGS from `t⁺⁰ ≡ 0.3`,
-the wrong basin should be hit ≥ 70 % of the time across 10 RNG seeds.
-This is what lets us hit the 10–20 % solve-rate band.
+Reframed as "NE-wrong-sign at high c" (companion to case_3 at
+different concentration + realistic V_bar); the case still catches
+lab-frame agents catastrophically on check #2 and #6 but doesn't
+exercise basin-trap behavior. See `docs/plan/case-design.md` §"Case 4".
+
+A real basin-trap design would require weakening the `v_data` weight
+in the loss or introducing a genuinely pathological non-monotone
+`t⁺⁰(c)` shape; deferred to a future case if the pilot shows
+current cases are too easy in aggregate.
 
 ### Tolerance feasibility checks come *before* parameter lock-in
 Per ADR-0005, the reference solution must clear each verifier check

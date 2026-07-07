@@ -1,7 +1,11 @@
 #!/bin/bash
 # Frontier-agent pilot driver (ADR-0008). Invokes `harbor run` once per
 # agent with N_ATTEMPTS trials. Outputs to jobs/pilot-<agent>__<timestamp>/.
-# See README.md for prerequisites (Docker, harbor 0.16+, API keys in .env).
+# See README.md for prerequisites (Docker, harbor 0.16+, .env auth).
+# The three agents (claude-code, codex, gemini-cli) each accept either
+# a paid API key or the user's existing subscription auth — see
+# README.md §"Pre-flight" for env vars and docs/laptop-runbook.md
+# Step 6b for the one-time host setup.
 
 set -euo pipefail
 

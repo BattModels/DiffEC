@@ -23,7 +23,7 @@ designs, progress logs, and HPC reference material go in `docs/`:
   - `plan/oracle-spec.md` — moving-frame PDE solver spec (frame, BCs, IC, sign conventions, numerical scheme)
   - `plan/verifier-spec.md` — 5 checks, tolerance feasibility argument, anti-cheat self-consistency, `test.sh`/`reward.txt` wrapper
 - `docs/progress/` — what we tried, outcomes, lessons learned
-  - `progress/key-facts.md` — non-obvious gotchas (moving vs lab frame, sign of v₀, t⁺⁰_NE inversion, multi-modality)
+  - `progress/key-facts.md` — non-obvious gotchas (moving vs lab frame, sign of v₀, t⁺⁰_NE inversion, case_4 basin-trap-intent postmortem)
 - `docs/session.md` — running experience notebook (gitignored, updated every work chunk)
 - `docs/hpc/artemis.md` — Artemis cluster + Slurm reference (oracle generation may use a CPU node)
 
@@ -81,7 +81,7 @@ Ship a complete, mergeable Harbor task that:
 - **Case 1 (NE-valid):** weak ion-solvent correlation; `t⁺⁰ > 0` everywhere; lab-frame agents pass.
 - **Case 2 (NE-deviates):** moderate correlation; signs agree but magnitudes diverge; lab-frame agents fail check #1 or #5.
 - **Case 3 (NE-wrong-sign):** Steinrück-2020-like sign flip at high c; lab-frame agents fail catastrophically; the headline case.
-- **Case 4 (multi-modal):** well-separated `+t⁺⁰` and `−t⁺⁰` basins; single-start optimization lands wrong a substantial fraction of the time.
+- **Case 4 (NE-wrong-sign, high c):** deeply negative `t⁺⁰` at higher concentration (c_grid ≈ [2.93, 3.20], `t⁺⁰` ∈ [-0.20, -0.18]). Companion to case 3; lab-frame agents fail catastrophically on checks #2 and #6. Originally scoped as a multi-modal basin trap but the v-data-weighted joint inverse reliably finds the correct basin from a literature-prior init.
 
 ## Design Constraints
 
@@ -159,7 +159,21 @@ RESULTS_DIR=./_local_results uv run pytest "$TASK/tests/test_outputs.py" -v
 harbor run -p "$TASK" -a oracle           # must return reward = 1
 ```
 
-For the frontier-agent pilot run, see `docs/plan/build-and-run.md` §7.
+For the frontier-agent pilot run, two entry points depending on
+scope:
+
+- **Mock exam** (single-trial-per-agent sanity check, run BEFORE
+  the pilot): `mock_exam/README.md`. Verifies that Harbor's
+  `environment_mode="separate"` container isolation actually keeps
+  our reference solution, oracle, docs, and CLAUDE.md out of the
+  agent's view — a real cold-start attempt.
+- **Full pilot** (10-trial × 3-agent solve-rate measurement per
+  ADR-0008): `docs/laptop-runbook.md` Part 2 is the authoritative
+  driver; `scripts/pilot/README.md` is the per-script reference.
+  Both cover subscription auth (Claude Max/Pro, ChatGPT Plus/Pro,
+  Gemini free tier) + paid-API-key fallback.
+
+`docs/plan/build-and-run.md` §7 has historical context.
 
 ## Code Style & Conventions
 
@@ -210,7 +224,7 @@ The task is mergeable when:
 3. `docs/plan/case-design.md` documents each case's true parameter functions, noise level, concentration range, and the failure mode it is designed to catch — and the reference-solution margins on each check are recorded in `docs/progress/key-facts.md`.
 4. The bundled `environment/data/cases/case_X/` directories contain only what the agent should see; no leaked ground-truth files. The verifier image holds `tests/oracle_truth/` and `tests/oracle/` but never reaches the agent (Harbor's separate-container enforcement).
 5. The held-out oracle parameters are demonstrably different from any published values for the PEO-LiTFSI system (Steinrück 2020, Pesko 2017, DiffEC paper, DiffEC repo results).
-6. The frontier-agent pilot (Opus 4.7 + GPT-5 + Gemini 2.5) returns a solve rate in the proposal's 10–20 % band, recorded in `docs/progress/pilot_run.md`.
+6. The frontier-agent pilot returns solve-rate evidence consistent with the proposal's 10–20 % band, recorded in `docs/progress/pilot_run.md`. **Interim status** (2026-07-06): direct-CLI mock pilot on Artemis ran 11 Opus + 2 Sonnet + 1 gpt-5.5 attempts, with 0 solves across all attempts (Wilson 95 % CI 0.0-25.9 % on N=11 Opus), mean check-pass 45–57 % depending on subset. This is consistent with the 10–20 % band but does not confirm it; the Harbor-driven 3-agent × 10-trial run from `docs/laptop-runbook.md` Part 2 remains the authoritative check.
 7. PR title `[TASK: Chemistry] …` references discussion #335; body includes `harbor analyze` output and an Oracle-pass screenshot; upstream CI (static checks, rubric review, execution checks, three-pass human review) is green.
 
 ## Experience Notebook

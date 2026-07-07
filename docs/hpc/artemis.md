@@ -55,6 +55,42 @@ Capabilities checked 2026-06-29:
 | `singularity build --remote` | ✓ (with Sylabs account) | Builds remotely via Sylabs Cloud. Free signup. |
 | Pre-built Docker images from public registries (ghcr.io, dockerhub) | ✓ | Anonymous pull works for public images. |
 
+### Harbor's `--env singularity` is BLOCKED on Artemis (2026-06-30)
+
+Empirically confirmed: Harbor 0.16's `singularity` environment
+hardcodes `singularity exec --fakeroot ...` (it bind-mounts a
+bootstrap script that runs `apt-get install` inside the container).
+`--fakeroot` requires subuid/subgid mappings — Artemis has none for
+users, so the FastAPI server inside the container can't start.
+
+```
+[server] FATAL: could not use fakeroot: no valid mapping entry found
+for changwex (114360116)
+```
+
+Implications:
+
+- **The DoD #2 smoke test (`harbor run -a oracle`) and the
+  frontier-agent pilot cannot run on Artemis as-is.** Run them on
+  a Docker-capable machine (laptop or cloud VM) — see
+  `docs/pre-pr-runbook.md` Phase 4.
+- Singularity here is still useful for plain `singularity exec
+  docker://image ...` workflows that don't need root inside the
+  container. Just not for Harbor's server-in-container pattern.
+
+Possible unblocks (none of them taken yet):
+
+1. Email UMich ARC support to add subuid mappings for the user
+   (`/etc/subuid`, `/etc/subgid`). Standard HPC ticket; common
+   request. Slow but durable — also unblocks rootless podman and
+   `singularity build --fakeroot`.
+2. Switch Harbor to its `--env docker` mode (i.e. use Docker
+   instead). Not available on Artemis.
+3. Patch `harbor/environments/singularity/singularity.py` to drop
+   `--fakeroot` and pre-bake `uvicorn`/`fastapi`/`tmux` into the
+   `diffec-env` image so the bootstrap script's installation
+   steps are no-ops. Risky local fork; would need to land upstream.
+
 **Implication for Harbor.** The Harbor framework's `--env singularity`
 mode (NVIDIA-contributed; see
 `harbor/environments/singularity/singularity.py`) requires a *pre-built*
@@ -63,11 +99,14 @@ canonical workflow for our task:
 
 1. Build the agent + verifier Docker images **once** on a Docker host
    (laptop or GitHub Codespaces).
-2. Push them to `ghcr.io/<your-handle>/diffec-{env,tests}:vN` (made
-   public).
+2. Push them to `ghcr.io/<your-handle>/diffec-{env,tests}:vN` and
+   **keep both private** — the verifier image bundles the held-out
+   ground truth and publishing it would leak the benchmark answers.
 3. Add `docker_image = "..."` lines to `task.toml`.
-4. On Artemis, `module load singularity/4.4.1` and run the pilot via
-   `scripts/pilot/run_pilot_singularity.sh`.
+4. On Artemis, `module load singularity/4.4.1`, export
+   `SINGULARITY_DOCKER_USERNAME` + `SINGULARITY_DOCKER_PASSWORD`
+   (a `read:packages` GitHub PAT) so singularity can pull, and run
+   the pilot via `scripts/pilot/run_pilot_singularity.sh`.
 
 The helper `scripts/build_and_push.sh` handles steps 1-2 end-to-end.
 
@@ -200,6 +239,13 @@ srun -p venkvis-cpu --qos=venkvis-short --mem=8G -t 02:00:00 --pty bash
 
 ## Running the Harbor pilot on Artemis
 
+> **CURRENTLY BLOCKED.** Harbor's `--env singularity` requires
+> `--fakeroot`, which Artemis doesn't grant. See "Harbor's
+> `--env singularity` is BLOCKED on Artemis" above and run the pilot
+> on a Docker host (laptop) per `docs/pre-pr-runbook.md` Phase 4.
+> The procedure below is retained so it's ready to use if subuid
+> ever gets enabled (Option 1 in the unblock list).
+
 Step-by-step procedure for the frontier-agent pilot (ADR-0008). The
 **full end-to-end procedure** (laptop build → Artemis pilot) lives in
 `docs/pre-pr-runbook.md` and supersedes this section if they ever
@@ -213,18 +259,13 @@ rationale.
 docker --version
 gh auth status
 
-# 2. Build the two images and push to ghcr.io.
+# 2. Build the two images and push to ghcr.io. Both stay PRIVATE
+#    (diffec-tests bundles the held-out truth via COPY . /tests/ —
+#    publishing it would leak the benchmark answers).
 GHCR_USER=<your-github-handle> bash scripts/build_and_push.sh
 
-# 3. Make both packages PUBLIC so anonymous pulls work from Artemis.
-#    Either via gh:
-gh api --method PATCH /user/packages/container/diffec-env/visibility   -f visibility=public
-gh api --method PATCH /user/packages/container/diffec-tests/visibility -f visibility=public
-#    Or via browser: https://github.com/<your-handle>?tab=packages →
-#    each package → Package settings → Change visibility → Public.
-
-# 4. Add the two docker_image lines to task.toml (the script prints them).
-#    Commit and push.
+# 3. Add the two docker_image lines to task.toml (the script prints them).
+#    Commit and push. Mark them PILOT-ONLY (revert before upstream PR).
 ```
 
 **On Artemis (the actual pilot):**
@@ -254,9 +295,19 @@ srun -p venkvis-cpu -N 1 --cpus-per-task=16 --mem=32G \
 
 module load singularity/4.4.1
 cd /nfs/turbo/coe-venkvis/$USER/projects/DiffEC
+
+# 5. Authenticate to GHCR so singularity can pull the private images.
+#    Create a classic PAT with read:packages scope at
+#    https://github.com/settings/tokens, then:
+export SINGULARITY_DOCKER_USERNAME=<your-github-handle>
+export SINGULARITY_DOCKER_PASSWORD=ghp_xxxxxxxx
+# (If the cluster ships Apptainer rather than Singularity, use the
+#  APPTAINER_DOCKER_USERNAME / APPTAINER_DOCKER_PASSWORD names.)
+
+# 6. Run the pilot.
 bash scripts/pilot/run_pilot_singularity.sh
 
-# 5. Aggregate.
+# 7. Aggregate.
 uv run python scripts/pilot/aggregate.py \
     --jobs jobs --out docs/progress/pilot_run.md
 ```

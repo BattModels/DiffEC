@@ -1,5 +1,9 @@
 # Pre-PR Runbook: smoke test + frontier-agent pilot
 
+> For machine-to-machine sync (laptop ↔ Artemis) and the
+> `origin` / `upstream` remote convention, see `docs/dev-setup.md`.
+
+
 The two remaining Definition-of-Done items (containerized Harbor oracle
 smoke test, frontier-agent pilot) can't be done on the Artemis HPC node
 alone — Harbor needs to build container images, and Artemis has no
@@ -74,29 +78,25 @@ If the build fails on your laptop's architecture (e.g., Apple Silicon),
 the script already uses `--platform linux/amd64` which slows the build
 slightly but produces images that run on the cluster.
 
-## Phase 2 — Laptop: make the images public (1 min, $0)
+## Phase 2 — Keep the images PRIVATE (anti-cheat) — do NOT make public
 
-GHCR packages default to private. Singularity on Artemis won't
-authenticate, so the images need to be public.
+**Decision (2026-06-29):** both images stay **private**. The
+`diffec-tests` image is built with `COPY . /tests/`, so it contains the
+held-out ground truth (`tests/oracle/` solver + `tests/oracle_truth/case_*/truth.npz`).
+Making it public on GHCR would publish the benchmark answers to anyone who
+knows the URL — directly breaking the project's anti-cheat invariant
+("hidden ground truth must never ship alongside the cases"). So we leave
+visibility private and have Singularity on Artemis authenticate instead.
 
-```bash
-# With gh CLI (run on the laptop):
-gh api --method PATCH /user/packages/container/diffec-env/visibility   -f visibility=public
-gh api --method PATCH /user/packages/container/diffec-tests/visibility -f visibility=public
-```
+There is nothing to do on the laptop for this phase. Authentication is
+set up on Artemis in Phase 4 via a `read:packages` PAT and the
+`SINGULARITY_DOCKER_USERNAME` / `SINGULARITY_DOCKER_PASSWORD` env vars.
 
-Or in a browser:
-
-1. Open <https://github.com/your-handle?tab=packages>
-2. Click `diffec-env` → **Package settings** → **Danger Zone** → **Change visibility** → **Public** → type name → confirm
-3. Repeat for `diffec-tests`
-
-Verify public anonymously from the laptop terminal:
+Optional: confirm the images are present (and private) in your GHCR:
 
 ```bash
-docker logout ghcr.io
-docker pull ghcr.io/<you>/diffec-env:v1    # should succeed without auth
-docker pull ghcr.io/<you>/diffec-tests:v1
+gh api /user/packages/container/diffec-env   --jq '.visibility'   # -> "private"
+gh api /user/packages/container/diffec-tests --jq '.visibility'   # -> "private"
 ```
 
 ## Phase 3 — Laptop: edit `task.toml`, commit, push (5 min, $0)
@@ -135,17 +135,29 @@ git commit -m "Point task.toml at GHCR images for singularity env"
 git push origin feat/tb-sci-task
 ```
 
-## Phase 4 — Artemis: smoke test + pilot (~8 h wall, $200–500)
+## Phase 4 — Laptop: smoke test + pilot (~8 h wall, $200–500)
 
-SSH to Artemis from your laptop (`ssh changwex@artemis-login.engin.umich.edu`
-or whatever your endpoint is). Then on Artemis:
+> **Why the laptop instead of Artemis?** Empirically confirmed
+> 2026-06-30: Harbor's `--env singularity` hardcodes
+> `singularity exec --fakeroot`, and Artemis users have no subuid
+> mappings → the FastAPI server inside the container can never
+> start (`could not use fakeroot: no valid mapping entry`).
+> See `docs/hpc/artemis.md` §"Harbor's --env singularity is BLOCKED".
+> The Singularity path stays scaffolded in this repo
+> (`scripts/pilot/run_pilot_singularity.sh`, `docs/hpc/artemis.md`)
+> in case subuid gets enabled on the cluster — but for now, run on
+> the laptop with `--env docker`, which Just Works.
+
+On your laptop (same machine that ran Phase 1 — Docker is already
+installed):
 
 ```bash
-cd /nfs/turbo/coe-venkvis/$USER/projects/DiffEC
-git pull
+cd ~/DiffEC                       # or wherever your clone lives
+git checkout feat/tb-sci-task
+git pull --ff-only
 
-module load singularity/4.4.1
-uv tool install harbor              # one-time, user-local
+uv tool install harbor            # one-time, user-local
+docker --version                   # confirm Docker is running
 
 # API keys (gitignored — never committed).
 cat > scripts/pilot/.env <<EOF
@@ -155,30 +167,26 @@ GEMINI_API_KEY=AIza…
 EOF
 chmod 600 scripts/pilot/.env
 
-# Request an interactive compute node (12 h to cover the pilot).
-srun -p venkvis-cpu -N 1 --cpus-per-task=16 --mem=32G \
-     -t 12:00:00 --pty bash
-```
-
-When the compute-node shell appears:
-
-```bash
-module load singularity/4.4.1
-cd /nfs/turbo/coe-venkvis/$USER/projects/DiffEC
-
-# === SMOKE TEST FIRST — verify singularity + images work (~15 min, free) ===
-harbor run --path tasks/physical-sciences/chemistry/concentrated-electrolyte-mass-transport \
-           --env singularity \
-           --agent oracle \
-           --yes
-# Should report reward = 1 at the end. If it doesn't:
-#   - check images are public (Phase 2)
-#   - check task.toml has docker_image lines pushed to the branch (Phase 3)
-#   - check singularity cache is writable: ls -la $SCRATCH_DIR/singularity_cache
+# === SMOKE TEST FIRST (~15 min, free) ===
+# This uses Docker directly so no GHCR auth is needed — Harbor builds
+# both images locally from environment/Dockerfile + tests/Dockerfile.
+# (You can leave the docker_image = "ghcr.io/…" lines in task.toml or
+# delete them; Docker env prefers the local Dockerfile build either way.)
+harbor run \
+    --path tasks/physical-sciences/chemistry/concentrated-electrolyte-mass-transport \
+    --env docker \
+    --agent oracle \
+    --yes
+# Expect reward = 1. If it doesn't:
+#   - check docker is running (docker ps)
+#   - check disk space (the build is ~6 GB)
+#   - check Dockerfile parses (docker build tasks/.../environment)
 # Don't proceed to the full pilot until the smoke test passes.
 
 # === FULL PILOT (3 agents × 10 trials, ~8 h, $200–500) ===
-bash scripts/pilot/run_pilot_singularity.sh
+# scripts/pilot/run_pilot.sh defaults to --env docker. Optional: run in
+# tmux/screen so it survives terminal disconnects.
+bash scripts/pilot/run_pilot.sh
 
 # === AGGREGATE ===
 uv run python scripts/pilot/aggregate.py \
@@ -199,7 +207,7 @@ After this, both Definition-of-Done items are met. The PR is unblocked.
 | `gh: command not found` (laptop) | gh CLI missing | `brew install gh` (macOS) / `apt install gh` (Linux) / download from cli.github.com |
 | `docker: command not found` (laptop) | Docker missing | install Docker Desktop |
 | `denied: requested access to the resource is denied` on push | Not authenticated or wrong scope | rerun `gh auth login` ensuring `write:packages` scope, OR generate a PAT with that scope |
-| Singularity pull `unauthorized` | Image still private | redo Phase 2 (visibility = public) |
+| Singularity pull `unauthorized` | GHCR auth not set / PAT lacks read:packages | export `SINGULARITY_DOCKER_USERNAME` + `SINGULARITY_DOCKER_PASSWORD` (read:packages PAT); on Apptainer use the `APPTAINER_` names |
 | `harbor` exits with "no `docker_image` field" | task.toml not updated or not pushed | redo Phase 3, push, then `git pull` on Artemis |
 | Singularity cache permission errors | `$SCRATCH_DIR` not writable | `mkdir -p /tmp/sing_cache && export SINGULARITY_CACHE=/tmp/sing_cache` |
 | Pilot exits with API auth error | API key wrong or env file not loaded | check `scripts/pilot/.env` is present and not empty; re-run |
