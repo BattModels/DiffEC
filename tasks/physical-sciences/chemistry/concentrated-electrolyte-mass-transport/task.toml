@@ -34,17 +34,9 @@ environment_mode = "separate"
 timeout_sec = 3600.0
 
 [environment]
-# PILOT-ONLY: points Singularity at a prebuilt GHCR image so the Artemis
-# pilot doesn't need Docker. Personal namespace — REVERT before the upstream
-# PR (upstream builds from environment/Dockerfile). See docs/pre-pr-runbook.md.
-docker_image = "ghcr.io/changwenxu98/diffec-env:v1"
 build_timeout_sec = 600.0
 cpus = 8
 memory_mb = 16384
 storage_mb = 10240
 gpus = 0
 allow_internet = true
-
-[verifier.environment]
-# PILOT-ONLY (private image; Artemis authenticates to GHCR). REVERT before PR.
-docker_image = "ghcr.io/changwenxu98/diffec-tests:v1"
