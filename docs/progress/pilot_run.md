@@ -103,6 +103,47 @@ self_consistency             4/4        1/4        4/4
 TOTAL / 28                 21/28      9/28       13/28
 ```
 
+### v5 — Opus × 4 sequential to reach N=10 (2026-07-06)
+
+Sequential single-arm run through 4 more Opus trials in the same
+`/tmp/mock_pilot_2026-07-06/` sandbox (post-§3.3.1). Sequential
+because v3's parallel batching visibly hurt results.
+
+| Arm | Wall | Exit | Outputs | Verifier | Notes |
+|---|---|---|---|---|---|
+| `trial_opus_2` | 26 min | 0 clean | 4/4 | **19/28** | 2/4 flux, 3/4 regime, 4/4 self-consistency |
+| `trial_opus_3` | 52 min | 0 clean | 4/4 | 9/28 | 0/4 flux, 0/4 regime, 1/4 self-consistency — worst of the clean arms |
+| `trial_opus_4` | 118 min | 0 clean | 4/4 | 14/28 | 0/4 flux, 3/4 regime — regime OK but flux regressed |
+| `trial_opus_5` | 127 min | 1 (rate-limit) | 0/4 | 0/28 | Hit Max wall at launch: `"out of extra usage · resets 9:40pm (America/Detroit)"`. Different reset window than v3's 4:20am — Max appears to enforce a rolling cap that drained mid-sequence after ~4.5 h cumulative activity. |
+
+**v4 + v5 per-check (5 arms attempted, 4 valid — opus_5 rate-limited):**
+
+```
+test                v4_opus_1 v5_opus_2 v5_opus_3 v5_opus_4 v5_opus_5
+schema                  4/4       4/4       4/4       4/4       0/4
+D                       2/4       1/4       0/4       1/4       0/4
+tp0                     3/4       1/4       0/4       1/4       0/4
+regime                  3/4       3/4       0/4       3/4       0/4
+velocity_rmse           4/4       4/4       4/4       4/4       0/4
+flux_decomposition      2/4       2/4       0/4       0/4       0/4   ← stochastic
+self_consistency        4/4       4/4       1/4       1/4       0/4
+────────────────────────────────────────────────────────────────────
+TOTAL / 28             22/28    19/28     9/28     14/28      0/28
+```
+
+**§3.3.1 lift is real but stochastic.** 2 of 4 valid post-§3.3.1
+arms (v4_opus_1, v5_opus_2) got `flux_decomposition` 2/4 —
+predictably cases 2 and 4. The other 2 valid arms (v5_opus_3,
+v5_opus_4) got 0/4. Session logs indicate the 2/4 arms explicitly
+referenced §3.3.1 while the 0/4 arms fell back to their own
+scratch computation. The worked example helps agents that engage
+with it, but doesn't force engagement.
+
+**Isolation:** all 4 arms clean on transcript grep.
+
+Archived at `_local_jobs/mock_pilot_2026-07-06/` (3.5 MB now covers
+v4 + v5).
+
 ### v4 — Opus × 1 after §3.3.1 worked example added (2026-07-06)
 
 Single-arm rerun to test whether adding a worked flux-decomposition
@@ -207,6 +248,9 @@ trials against these case bundles.
 | v3 clean 4 (excl. opus_4 partial) | 0/4 | 0 % | 0.0 – 49.0 % | 44.6 % |
 | v2 + v3 combined (6 Opus) | 0/6 | 0 % | 0.0 – 39.0 % | 44.0 % |
 | v2 + v3 + v4 (7 Opus) | 0/7 | 0 % | 0.0 – 35.4 % | 47.4 % |
+| v2 + v3 + v4 + v5 (11 Opus) | 0/11 | 0 % | 0.0 – 25.9 % | 45.5 % |
+| Above, **excluding rate-limited** (9 Opus) | 0/9 | 0 % | 0.0 – 29.9 % | 53.6 % |
+| **Post-§3.3.1 clean subset** (4 Opus: v4_opus_1 + v5_opus_{2,3,4}) | 0/4 | 0 % | 0.0 – 49.0 % | 57.1 % |
 
 **Reading the numbers.** Solve rate is 0/N across all Opus samples;
 Wilson upper bound at N=6 is ~39 %, which is consistent with
@@ -355,10 +399,13 @@ Full raw transcripts + outputs preserved at
 
 ## Next steps
 
-- **Decide on N.** If 0-39% CI is acceptable evidence for TB-Science,
-  we can freeze the case design and open the PR. If tighter CI is
-  needed, run 10 more sequential Opus trials on the laptop pilot
-  (~10 × 40 min = 6.5 h wall time).
+- **N = 11 Opus attempts (9 usable) gives 0 solves with Wilson 95%
+  CI 0-30%.** Still cannot exclude "in-band" (10-20%) vs "too hard"
+  (< 5%). Two ways forward: (a) accept 0-30% CI as evidence the task
+  is real and discriminating without hitting solve — mean check-pass
+  rate 53.6% is a meaningful narrative for reviewers; or
+  (b) run 10 more sequential Opus trials on the laptop (paid API-key
+  path to skip Max quota) to tighten CI to ~ ±15 pp.
 - **Update CLAUDE.md DoD item #6 status** to note this mock-CLI pilot
   as an interim step; the Harbor laptop pilot remains the
   authoritative check.
