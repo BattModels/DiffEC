@@ -132,7 +132,7 @@ $ RESULTS_DIR=./_local_results uv run pytest tests/test_outputs.py -v
 ```
 
 **Oracle-agent pass under Harbor** (Colima + Docker on laptop,
-8 CPU / 12 GB VM, 2026-07-14):
+container capped at 4 CPU / 8 GB to mirror the GH runner, 2026-07-15):
 
 ```
 $ harbor run -p <task> -a oracle --yes
@@ -141,13 +141,13 @@ $ harbor run -p <task> -a oracle --yes
 ┡━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━┩
 │      1 │          0 │ 1.000 │
 └────────┴────────────┴───────┘
-reward = 1.0, total runtime 3m 56s
+reward = 1.0, total runtime 4m 1s
 ```
 
 Both containers built from `environment/Dockerfile` and
-`tests/Dockerfile` respectively. (An earlier 2026-07-01 run on a
-4-CPU VM took 9m 4s; the faster time here reflects the 8-CPU VM the
-task's `environment.cpus = 8` requires — see Known limitations.)
+`tests/Dockerfile` respectively. Runs within the default Harbor
+`docker` validation backend (GitHub runner: 4 cores / 16 GB), well
+inside the 3600 s agent and 600 s verifier timeouts.
 
 **Frontier-agent difficulty (interim mock pilot).**
 
@@ -255,7 +255,7 @@ has only the passing Oracle trajectory to grade. Per-check
 
 Per `task.toml`:
 - `agent.timeout_sec = 3600` (~ 15 min typical, 60 min cap per trial).
-- `environment.cpus = 8`, `memory_mb = 16384`, `storage_mb = 10240`,
+- `environment.cpus = 4`, `memory_mb = 8192`, `storage_mb = 10240`,
   `gpus = 0`, `allow_internet = true` (agent may need to install
   extra libs, though our reference uses only `jax`, `jaxopt`, `scipy`,
   `numpy`, `h5py`).
