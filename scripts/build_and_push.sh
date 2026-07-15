@@ -24,7 +24,7 @@ set -euo pipefail
 
 GHCR_USER="${GHCR_USER:?Set GHCR_USER to your GitHub handle (lowercase)}"
 TAG="${TAG:-v1}"
-TASK="tasks/physical-sciences/chemistry/concentrated-electrolyte-mass-transport"
+TASK="tasks/physical-sciences/chemistry/concentrated-electrolyte-transport"
 
 # GHCR requires lowercase repo names.
 GHCR_USER_LC="$(echo "$GHCR_USER" | tr '[:upper:]' '[:lower:]')"

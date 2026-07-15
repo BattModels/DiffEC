@@ -28,7 +28,7 @@ EOF
     exit 2
 fi
 
-TASK="tasks/physical-sciences/chemistry/concentrated-electrolyte-mass-transport"
+TASK="tasks/physical-sciences/chemistry/concentrated-electrolyte-transport"
 JOBS_DIR="mock_exam/results"
 ENV_FILE="scripts/pilot/.env"
 

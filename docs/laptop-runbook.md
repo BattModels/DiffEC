@@ -112,7 +112,7 @@ Because the lines are *committed* (not a working-tree modification),
 restore afterward.
 
 ```bash
-TASK=tasks/physical-sciences/chemistry/concentrated-electrolyte-mass-transport
+TASK=tasks/physical-sciences/chemistry/concentrated-electrolyte-transport
 
 # Delete the two docker_image lines and the [verifier.environment]
 # section. Edit with your editor of choice, or use this sed one-liner
@@ -136,7 +136,7 @@ file back to its committed state, `docker_image` lines intact.
 
 ```bash
 harbor run \
-    --path tasks/physical-sciences/chemistry/concentrated-electrolyte-mass-transport \
+    --path tasks/physical-sciences/chemistry/concentrated-electrolyte-transport \
     --env docker \
     --agent oracle \
     --yes
@@ -178,7 +178,7 @@ If the smoke test passed:
 ```bash
 # Restore the PILOT-ONLY docker_image lines (they're still valuable
 # for the fallback Singularity path if subuid ever lands on Artemis).
-git checkout -- tasks/physical-sciences/chemistry/concentrated-electrolyte-mass-transport/task.toml
+git checkout -- tasks/physical-sciences/chemistry/concentrated-electrolyte-transport/task.toml
 
 # Working tree should be clean now:
 git status

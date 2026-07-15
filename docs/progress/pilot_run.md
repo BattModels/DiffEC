@@ -341,7 +341,7 @@ To rerun the mock exam on a fresh /tmp:
 # 1. Stage sandbox (adjust date)
 MOCK=/tmp/mock_pilot_YYYY-MM-DD
 mkdir -p $MOCK/data/cases
-TASK=tasks/physical-sciences/chemistry/concentrated-electrolyte-mass-transport
+TASK=tasks/physical-sciences/chemistry/concentrated-electrolyte-transport
 for c in case_{1..4}; do cp -r $TASK/environment/data/cases/$c $MOCK/data/cases/; done
 sed "s|/root/|$MOCK/|g" $TASK/instruction.md > $MOCK/instruction.md
 

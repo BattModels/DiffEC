@@ -48,7 +48,7 @@ What each check covers (in case you need to triage a failure):
 
 ## Step 2 — Manual revert of PILOT-ONLY lines
 
-Open `tasks/physical-sciences/chemistry/concentrated-electrolyte-mass-transport/task.toml`.
+Open `tasks/physical-sciences/chemistry/concentrated-electrolyte-transport/task.toml`.
 
 **Delete these six lines from the `[environment]` block** (currently around lines 37-40):
 
@@ -76,8 +76,8 @@ The final `task.toml` matches upstream's
 Verify with grep:
 
 ```bash
-grep -c '^docker_image'         tasks/physical-sciences/chemistry/concentrated-electrolyte-mass-transport/task.toml   # expect 0
-grep -c '^\[verifier\.environment\]' tasks/physical-sciences/chemistry/concentrated-electrolyte-mass-transport/task.toml  # expect 0
+grep -c '^docker_image'         tasks/physical-sciences/chemistry/concentrated-electrolyte-transport/task.toml   # expect 0
+grep -c '^\[verifier\.environment\]' tasks/physical-sciences/chemistry/concentrated-electrolyte-transport/task.toml  # expect 0
 ```
 
 Both should print `0`.
@@ -94,7 +94,7 @@ upstream PR.** All 14 checks green.
 ## Step 4 — Commit the revert
 
 ```bash
-git add tasks/physical-sciences/chemistry/concentrated-electrolyte-mass-transport/task.toml
+git add tasks/physical-sciences/chemistry/concentrated-electrolyte-transport/task.toml
 git commit -m "Revert PILOT-ONLY docker_image lines for upstream PR
 
 The two docker_image lines and the [verifier.environment] section
@@ -109,7 +109,7 @@ git push
 ## Step 5 — Sanity: verifier still passes 28/28 locally
 
 ```bash
-TASK=tasks/physical-sciences/chemistry/concentrated-electrolyte-mass-transport
+TASK=tasks/physical-sciences/chemistry/concentrated-electrolyte-transport
 RESULTS_DIR=./_local_results TRUTH_DIR="$TASK/tests/oracle_truth" \
     uv run pytest "$TASK/tests/test_outputs.py"
 # Expect: 28 passed
@@ -122,7 +122,7 @@ the PR.
 
 PR target: `harbor-framework/terminal-bench-science` (a separate
 repo, not `BattModels/DiffEC`). This is a one-time copy of the
-`tasks/.../concentrated-electrolyte-mass-transport/` subtree per
+`tasks/.../concentrated-electrolyte-transport/` subtree per
 ADR-0009 — not a git-merge relationship.
 
 PR conventions (from CLAUDE.md and upstream `CONTRIBUTING.md`):

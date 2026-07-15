@@ -49,7 +49,7 @@ import numpy as np
 REPO_ROOT = Path(__file__).resolve().parents[1]
 TASK_ROOT = (
     REPO_ROOT
-    / "tasks/physical-sciences/chemistry/concentrated-electrolyte-mass-transport"
+    / "tasks/physical-sciences/chemistry/concentrated-electrolyte-transport"
 )
 PUBLISHED = REPO_ROOT / "Mass Transport in Concentrated Electrolytes and Benchmarks"
 

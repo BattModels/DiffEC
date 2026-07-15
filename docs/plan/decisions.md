@@ -236,18 +236,18 @@ between now and PR submission, we re-pin in this ADR and re-validate
 locally with the upgraded `harbor check`.
 
 
-## ADR-0011 — Lock task name as `concentrated-electrolyte-mass-transport`
+## ADR-0011 — Lock task name as `concentrated-electrolyte-transport`
 
 **Status:** Accepted (2026-06-23)
 
 **Context.** Harbor task names are kebab-case under
 `tasks/<domain>/<field>/<task-name>/`. We brainstormed three candidates
 in `harbor-task-format.md`:
-- `concentrated-electrolyte-mass-transport`
+- `concentrated-electrolyte-transport`
 - `diffec-mass-transport`
 - `newman-inversion-from-operando`
 
-**Decision.** `concentrated-electrolyte-mass-transport`.
+**Decision.** `concentrated-electrolyte-transport`.
 
 **Rationale.**
 - Most directly describes *what the task is about* (the physics regime),
@@ -261,7 +261,7 @@ in `harbor-task-format.md`:
   NE-equivalent comparison, none of which are "the Newman inversion" by
   themselves.
 
-Full upstream path: `tasks/physical-sciences/chemistry/concentrated-electrolyte-mass-transport/`.
+Full upstream path: `tasks/physical-sciences/chemistry/concentrated-electrolyte-transport/`.
 
 **Consequences.** Final paths are now pinned. Replace the
 `<task-name>` placeholder in `harbor-task-format.md`, `architecture.md`,

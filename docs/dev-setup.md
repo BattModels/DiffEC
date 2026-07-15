@@ -120,7 +120,7 @@ The final destination is a SEPARATE repo, not BattModels:
 - `harbor-framework/terminal-bench-science` (the TB-Sci benchmark repo)
 
 That submission is a one-time copy of just
-`tasks/physical-sciences/chemistry/concentrated-electrolyte-mass-transport/`
+`tasks/physical-sciences/chemistry/concentrated-electrolyte-transport/`
 into a PR there. It is **not** a git-merge relationship with this repo
 — ADR-0009 spells out how that transfer works.
 

@@ -22,7 +22,7 @@ velocity field, and a cation-flux decomposition) under Newman's
 concentrated-solution theory.
 
 The contribution lives entirely under
-`tasks/physical-sciences/chemistry/concentrated-electrolyte-mass-transport/`.
+`tasks/physical-sciences/chemistry/concentrated-electrolyte-transport/`.
 The rest of the branch is dev-only tooling (`case_gen/`, `scripts/`,
 `docs/`, `mock_exam/`, `AGENTS.md`, `CLAUDE.md`) that won't reach
 the TB-Science upstream PR.
@@ -62,7 +62,7 @@ the TB-Science upstream PR.
 ## What's in the shipped task subtree
 
 ```
-tasks/physical-sciences/chemistry/concentrated-electrolyte-mass-transport/
+tasks/physical-sciences/chemistry/concentrated-electrolyte-transport/
 ├── instruction.md            # agent prompt
 ├── task.toml                 # Harbor 0.16 schema_version = "1.0"
 ├── environment/              # agent container
@@ -213,7 +213,7 @@ uv sync
 uv run python -m case_gen.generate --all
 
 # 3. Verifier against the reference solution (must be 28 passed)
-TASK=tasks/physical-sciences/chemistry/concentrated-electrolyte-mass-transport
+TASK=tasks/physical-sciences/chemistry/concentrated-electrolyte-transport
 uv run python "$TASK/solution/reference_solver.py" \
     --cases "$TASK/environment/data/cases" --out ./_local_results
 RESULTS_DIR=./_local_results TRUTH_DIR="$PWD/$TASK/tests/oracle_truth" \

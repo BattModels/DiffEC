@@ -1,5 +1,5 @@
 #!/bin/bash
-# Pre-PR audit for the tasks/.../concentrated-electrolyte-mass-transport
+# Pre-PR audit for the tasks/.../concentrated-electrolyte-transport
 # subtree that ships to harbor-framework/terminal-bench-science.
 #
 # Runs 14 checks. Prints one line per check with PASS/FAIL and a short
@@ -14,7 +14,7 @@
 
 set -uo pipefail
 
-TASK="tasks/physical-sciences/chemistry/concentrated-electrolyte-mass-transport"
+TASK="tasks/physical-sciences/chemistry/concentrated-electrolyte-transport"
 FAIL=0
 
 pass() { printf "  ✓ %s\n" "$1"; }

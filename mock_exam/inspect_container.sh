@@ -9,7 +9,7 @@
 
 set -euo pipefail
 
-TASK="tasks/physical-sciences/chemistry/concentrated-electrolyte-mass-transport"
+TASK="tasks/physical-sciences/chemistry/concentrated-electrolyte-transport"
 IMAGE_TAG="diffec-mock-agent-view:latest"
 
 [ -d "$TASK" ] || { echo "ERROR: task dir not found: $TASK"; exit 2; }

@@ -10,7 +10,7 @@
 
 set -euo pipefail
 
-TASK="tasks/physical-sciences/chemistry/concentrated-electrolyte-mass-transport"
+TASK="tasks/physical-sciences/chemistry/concentrated-electrolyte-transport"
 
 if [ ! -d "$TASK" ]; then
     echo "ERROR: task dir not found at $TASK — run from repo root." >&2

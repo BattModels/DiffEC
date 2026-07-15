@@ -101,7 +101,7 @@ gh api /user/packages/container/diffec-tests --jq '.visibility'   # -> "private"
 
 ## Phase 3 — Laptop: edit `task.toml`, commit, push (5 min, $0)
 
-Edit `tasks/physical-sciences/chemistry/concentrated-electrolyte-mass-transport/task.toml`.
+Edit `tasks/physical-sciences/chemistry/concentrated-electrolyte-transport/task.toml`.
 
 Add **one line** at the top of the existing `[environment]` block:
 
@@ -130,7 +130,7 @@ Singularity uses. Both modes coexist.)
 Commit and push:
 
 ```bash
-git add tasks/physical-sciences/chemistry/concentrated-electrolyte-mass-transport/task.toml
+git add tasks/physical-sciences/chemistry/concentrated-electrolyte-transport/task.toml
 git commit -m "Point task.toml at GHCR images for singularity env"
 git push origin feat/tb-sci-task
 ```
@@ -173,7 +173,7 @@ chmod 600 scripts/pilot/.env
 # (You can leave the docker_image = "ghcr.io/…" lines in task.toml or
 # delete them; Docker env prefers the local Dockerfile build either way.)
 harbor run \
-    --path tasks/physical-sciences/chemistry/concentrated-electrolyte-mass-transport \
+    --path tasks/physical-sciences/chemistry/concentrated-electrolyte-transport \
     --env docker \
     --agent oracle \
     --yes

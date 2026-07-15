@@ -47,7 +47,7 @@ AGENTS=(
     "gemini-cli:gemini-2.5-pro:gemini25"
 )
 
-TASK="tasks/physical-sciences/chemistry/concentrated-electrolyte-mass-transport"
+TASK="tasks/physical-sciences/chemistry/concentrated-electrolyte-transport"
 
 # --- Pre-flight ------------------------------------------------------
 command -v harbor       >/dev/null || { echo "ERROR: harbor CLI not in PATH"; exit 2; }

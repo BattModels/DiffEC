@@ -184,6 +184,6 @@ At runtime, inside Harbor's containers:
 
 ## Open questions (resolve before locking)
 
-1. **Final `<task-name>` (kebab-case).** Candidates in `harbor-task-format.md`: `concentrated-electrolyte-mass-transport`, `diffec-mass-transport`, `newman-inversion-from-operando`. Decide and record in an ADR before laying down the `tasks/` directory.
+1. **Final `<task-name>` (kebab-case).** Candidates in `harbor-task-format.md`: `concentrated-electrolyte-transport`, `diffec-mass-transport`, `newman-inversion-from-operando`. Decide and record in an ADR before laying down the `tasks/` directory.
 2. **Verifier-image size.** Baking JAX + the held-out solver + `oracle_truth/` into `tests/Dockerfile` will be a couple hundred MB. Acceptable per the upstream norm (the example image is similar). Confirm under `harbor run` timing.
 3. **`allow_internet` in `[environment]`.** Setting `true` lets the agent install extra packages but also lets it call out to the web. We need agents to be able to install (the existing TB-Science example uses `allow_internet = true`), and per ADR-0004 the held-out parameters resist literature-lookup attacks anyway — confirm but tentatively keep `true`.

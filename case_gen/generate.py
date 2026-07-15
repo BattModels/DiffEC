@@ -39,7 +39,7 @@ config.update("jax_enable_x64", True)
 REPO_ROOT = Path(__file__).resolve().parents[1]
 TASK_ROOT = (
     REPO_ROOT
-    / "tasks/physical-sciences/chemistry/concentrated-electrolyte-mass-transport"
+    / "tasks/physical-sciences/chemistry/concentrated-electrolyte-transport"
 )
 
 sys.path.insert(0, str(TASK_ROOT / "tests"))

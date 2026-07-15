@@ -287,6 +287,6 @@ Review and iteration are post-deadline but no new PRs after.
 - [ ] `docs/plan/verifier-spec.md` → confirm the `reward.txt`
       single-integer convention (all-or-nothing per the upstream
       example) and the `test.sh` wrapper around pytest.
-- [ ] Decide a kebab-case `<task-name>`. Candidates: `concentrated-electrolyte-mass-transport`,
+- [ ] Decide a kebab-case `<task-name>`. Candidates: `concentrated-electrolyte-transport`,
       `diffec-mass-transport`, `newman-inversion-from-operando`.
 - [ ] Sketch `task.toml` once the case design is locked.
