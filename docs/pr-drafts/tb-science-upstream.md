@@ -128,17 +128,23 @@ $ RESULTS_DIR=./_local_results uv run pytest tests/test_outputs.py -v
 28 passed in 7.84s
 ```
 
-**Oracle-agent pass under Harbor** (Colima + BuildKit on laptop
-2026-07-01):
+**Oracle-agent pass under Harbor** (Colima + Docker on laptop,
+8 CPU / 12 GB VM, 2026-07-14):
 
 ```
-$ harbor run -p . -a oracle --yes
-Trials  Exceptions  Mean
-1       0           1.000     (reward = 1.0, runtime 9m 4s)
+$ harbor run -p <task> -a oracle --yes
+┏━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━┓
+┃ Trials ┃ Exceptions ┃  Mean ┃
+┡━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━┩
+│      1 │          0 │ 1.000 │
+└────────┴────────────┴───────┘
+reward = 1.0, total runtime 3m 56s
 ```
 
 Both containers built from `environment/Dockerfile` and
-`tests/Dockerfile` respectively.
+`tests/Dockerfile` respectively. (An earlier 2026-07-01 run on a
+4-CPU VM took 9m 4s; the faster time here reflects the 8-CPU VM the
+task's `environment.cpus = 8` requires — see Known limitations.)
 
 **Frontier-agent difficulty (interim mock pilot).**
 
@@ -169,11 +175,64 @@ API funding but scaffolded (`scripts/pilot/run_pilot.sh`,
 10–20 % target band, we believe the case design is stable enough
 for review, and further pilot data will refine rather than re-scope.
 
-### `harbor analyze` failure-mode analysis
+### `harbor analyze` output
 
-_TODO: Paste output from `harbor analyze .` after running the
-Harbor-driven pilot. Interim mock-pilot findings from
-`docs/progress/pilot_run.md`:_
+`harbor analyze` runs an LLM evaluator (`claude-code` +
+`claude-haiku-4-5`) over a job's trial trajectories and grades each
+against Harbor's default reward-hacking / task-specification rubric.
+Run on a fresh Oracle-agent pass (Colima + Docker on laptop,
+2026-07-14; evaluator cost $0.17):
+
+```
+$ harbor analyze jobs/<oracle-job> --passing
+🔍 Analyzing trial(s)...
+  1/1 Mean: 1.000  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━  0:01:58
+
+Summary: The oracle (reference) agent successfully solved all four
+concentrated-electrolyte mass-transport inverse problems, achieving
+perfect scores on all 28 tests (7 checks × 4 cases). The agent
+performed joint parameter optimization for diffusivity D(c) and
+transference number t⁺⁰(c) via BFGS on the moving-frame PDE forward
+model, then inverted the Nernst-Einstein lab-frame model separately
+to compute t⁺⁰_NE. All verifier checks passed ... self-consistency
+revalidation with 4 minutes to spare (160s/200s budget used).
+
+┏━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ Check              ┃ Outcome ┃ Explanation (abridged)            ┃
+┡━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+│ Reward Hacking     │ pass    │ Legitimate transport.json for all │
+│                    │         │ 4 cases (correct schema, finite,  │
+│                    │         │ no NaN/Inf). The verifier's own   │
+│                    │         │ self-consistency check re-runs    │
+│                    │         │ the held-out moving-frame PDE     │
+│                    │         │ from the agent's (D, t⁺⁰) and     │
+│                    │         │ passes — parameters are physically│
+│                    │         │ self-consistent, not numerical    │
+│                    │         │ hacks. No test-file modification, │
+│                    │         │ reward-file manipulation, or      │
+│                    │         │ solution-dir copying found.       │
+│ Task Specification │ pass    │ instruction.md specifies all      │
+│                    │         │ input paths, the output schema/   │
+│                    │         │ location, the five tolerances,    │
+│                    │         │ and the self-consistency sixth    │
+│                    │         │ check; the agent met every        │
+│                    │         │ criterion (28/28). No spec gap.   │
+└────────────────────┴─────────┴───────────────────────────────────┘
+Agent cost: $0.1695
+```
+
+Both rubric dimensions **pass**: the reference solution is not
+reward-hacking (it solves the physics, and the verifier's own
+self-consistency re-solve independently confirms it), and the task
+specification is complete enough for a capable agent to satisfy
+without ambiguity.
+
+No frontier-agent pilot trajectories exist yet (deferred pending API
+funding — see Known limitations #1), so `harbor analyze` currently
+has only the passing Oracle trajectory to grade. Per-check
+*failure*-mode detail therefore comes from the direct-CLI mock pilot
+(`docs/progress/pilot_run.md`); we will re-run `harbor analyze
+--failing` over real pilot trajectories once funded:
 
 - **`test_flux_decomposition`** was the uniformly hardest check
   before adding the §3.3.1 worked example; addressed and confirmed
