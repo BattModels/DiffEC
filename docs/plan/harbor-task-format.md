@@ -11,6 +11,15 @@
 >   from 2026-06-22 reference; still uses `schema_version = "1.0"` and
 >   `allow_internet = true`).
 >
+> Re-checked **2026-07-14** (pre-PR, against upstream `CONTRIBUTING.md`
+> HEAD `fbed249`):
+> - **`relevant_experience` under `[metadata]` is now explicitly Required**
+>   ("Generic statements ... will fail review"). Previously an open
+>   question (see below); now **added** to our `task.toml`. Resolved.
+> - No other blocking drift: `[verifier] environment_mode = "separate"`,
+>   top-level `artifacts = [...]`, `schema_version = "1.0"`, and the
+>   `[TASK: <field>]` title + proposal-link static check are all unchanged.
+>
 > Our `task.toml` parses successfully under Harbor 0.16.0's `TaskConfig`
 > pydantic schema (one `DeprecationWarning` for `allow_internet`, which is
 > auto-migrated to `network_mode = "public"` — identical to upstream's
@@ -112,8 +121,8 @@ Fields to confirm against the latest upstream example before submitting:
 - Whether `allow_internet` is the right key (a newer Harbor version uses
   `network_mode = "public"|"allowlist"|"no-network"` and `allowed_hosts`).
   Trust the upstream example, not `harborframework.com`.
-- Whether `relevant_experience` is required (CONTRIBUTING.md mentions it
-  but `geometric-pharmacophore-alignment` omits it). Include defensively.
+- ~~Whether `relevant_experience` is required~~ **RESOLVED 2026-07-14:
+  Required by CONTRIBUTING.md HEAD; added to `task.toml`.**
 
 ## Agent working-directory contract
 
