@@ -27,15 +27,30 @@ We solve the proposal's eqs 7-8:
 
 ```
 ∂c/∂t  = ∂/∂x [ D(c) (1 − d ln c₀ / d ln c) ∂c/∂x  −  t⁺⁰(c) i(t) / F  −  c v₀ ]
-∂v₀/∂x = V̄(c) ∂/∂x [ D(c) (1 − d ln c₀ / d ln c) ∂c/∂x  −  t⁺⁰(c) i(t) / F  −  c v₀ ]
+∂v₀/∂x = V̄(c) ∂/∂x [ D(c) (1 − d ln c₀ / d ln c) ∂c/∂x  −  t⁺⁰(c) i(t) / F ]
 ```
+
+**Velocity closure — the two brackets differ.** The `c v₀` convection term
+is present in the concentration flux (first equation) but **dropped from the
+velocity-driving flux** (second equation): `solver.py` evaluates the velocity
+increment from `_flux(..., jnp.zeros_like(v0), ...)`, i.e. the flux with
+`v₀ = 0`. This is the operator-split convention of the published DiffEC
+`solver.py`, **not** the self-consistent elimination of the coupled pair
+(which would yield a `1 / (1 + c V̄)` factor on `v₀`). The two closures
+differ by `O(c V̄)` — negligible in the dilute cases but ~25–30 % in the
+concentrated cases (case_4, `c V̄ ≈ 0.4`). With constant `V̄` the velocity
+integral telescopes to the closed form
+`v₀(x,t) = V̄ [ D(c) φ(c) ∂c/∂x + (1 − t⁺⁰(c)) i(t)/F ]`, whose uniform-`c`
+limit is the `_initial_v0` expression. This convention is quoted verbatim
+into `formalism.md` §2 (added 2026-07-30, ADR-0012) after a reviewer found
+the earlier bracket-symmetric wording contradicted the oracle.
 
 Both equations share the bracketed term `F(c, v₀; i, t)` — the cation
 flux. The numerical scheme exploits this:
 
 - Compute `F` once per timestep on cell interfaces (face values).
 - Concentration update: `c_{n+1} = c_n − (Δt/Δx) (F[1:] − F[:-1])`. First-order forward Euler in time (matching `solver.py`); cell-centered `c`; face-centered `F`.
-- Velocity update: integrate the second PDE in space — `v₀(x) = ∫₀^x V̄(c) ∂F/∂x' dx'`. In the discrete scheme this is a cumulative sum of `−V̄ · (F[j] − F[j−1])` across interior faces; `v₀` lives on faces, with `v₀[0]` set by the moving-boundary condition and `v₀[N]` falling out from the integral.
+- Velocity update: integrate the *convection-free* flux `F₀ ≡ F(c, v₀=0)` in space — `v₀(x) = ∫₀^x V̄(c) ∂F₀/∂x' dx'`. In the discrete scheme this is a cumulative sum of `−V̄ · (F₀[j] − F₀[j−1])` across interior faces; `v₀` lives on faces, with `v₀[0]` set by the moving-boundary condition and `v₀[N]` falling out from the integral.
 
 This matches `solver.py` exactly. Do not silently switch to centered
 differences, implicit time-stepping, or staggered grids — the verifier's
@@ -49,11 +64,16 @@ classical Nernst-Planck — i.e., ignoring solvent motion entirely. The
 proposal's `formalism.md` §3.2 gives the variational form:
 
 ```
-t⁺⁰_NE(c) = argmin_{tp0} || c_sim − c_data ||
-              subject to:  ∂c/∂t = ∂/∂x [ D(c) ∂c/∂x − tp0(c) i/F ]   (v₀ ≡ 0)
-                           tp0 evaluated at the same c_grid points
+t⁺⁰_NE(c) = argmin_{θ} || c_sim − c_data ||²
+              subject to:  ∂c/∂t = ∂/∂x [ D(c) (1 − d ln c₀ / d ln c) ∂c/∂x − t⁺⁰_NE(c) i/F ]   (v₀ ≡ 0)
+                           t⁺⁰_NE(c) = a₀ + a₁ u + a₂ u² + a₃ u³,  u = (c − c̄)/c_scale
                            D(c) = the agent's reported D(c) at c_grid points
 ```
+
+The lab-frame constraint **retains the thermodynamic factor**
+`(1 − d ln c₀ / d ln c)` — `simulate(..., lab_frame=True)` drops only the
+`c v₀` convection term, not the factor. (The earlier §3.2 wording omitted
+the factor; corrected 2026-07-30, ADR-0012.)
 
 Pinned details:
 
@@ -65,10 +85,15 @@ Pinned details:
   (check #3), not the `t⁺⁰_NE` values themselves — agents with slightly
   different `D(c)` won't be penalized for slightly different
   `t⁺⁰_NE` magnitudes, only for sign / NE_deviates mis-classification.
-- The inversion is solved by the same gradient-based BFGS used in the
-  forward inversion, on a 50-parameter `t⁺⁰_NE(c)` ansatz (one free
-  value per c_grid point with light Tikhonov regularization). This
-  matches what an honest agent would do.
+- The inversion is solved by `jaxopt.LBFGS` on a **cubic-polynomial**
+  `t⁺⁰_NE(c)` ansatz in normalized concentration `u = (c − c̄)/c_scale`
+  (`c̄ = mean(c_grid)`, `c_scale = (max − min)/2`), 4 free coefficients,
+  with a light Tikhonov penalty `λ (a₁²+a₂²+a₃²)`, `λ = 1e-3`, on the
+  higher-order terms only. The cubic (not the earlier 50-knot free ansatz)
+  is deliberate: a low-degree form has reproducible sign crossings across
+  BFGS implementations, so the regime labels are stable. The full ansatz +
+  fitting rule is now stated in `formalism.md` §3.2 so an agent can
+  reproduce it.
 
 ## 4. Flux decomposition convention
 

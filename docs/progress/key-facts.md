@@ -76,6 +76,21 @@ will get the boundary value wrong and silently introduce a constant
 offset to the entire velocity field. Match `solver.py`'s
 `update_solvent_vel` exactly.
 
+### Velocity closure drops `c v₀` — no `(1 + c V̄)` denominator (ADR-0012)
+The flux that drives the *velocity* update is evaluated at `v₀ = 0`
+(`solver.py:196` / `pde.py:161` pass `jnp.zeros_like(v0)`), so
+`v₀ = V̄[D φ c_x + (1 − t⁺⁰) i/F]` — **not** the self-consistent
+`… / (1 + c V̄)`. This is the published DiffEC operator split. The
+distinction is invisible at low c (dilute case_1: `c V̄ ≈ 0.02–0.04`,
+~2–4 % velocity effect) but decisive at high c (case_4: `c V̄ ≈ 0.4`,
+~27–29 % — well past the 15 % v-tolerance). It was **undocumented** until
+PR #584's technical reviewer caught it (2026-07-30); `formalism.md` §2
+now states the closure + closed form explicitly. Any forward model that
+solves the coupled flux/velocity pair self-consistently (keeping `c v₀`)
+will fail the concentrated cases on checks #1/#2/#4/#6. NB `formalism.md`'s
+IC was already denominator-free, so it always matched the oracle — only
+the second PDE was wrong.
+
 ### Published-fit residual bounds the achievable case tolerance
 The published Steinrück-2020 fit (BFGS to convergence with the published
 2-parameter `tp0` polynomial and the `D(c) = (1-tp0)·relation_coef/factor`

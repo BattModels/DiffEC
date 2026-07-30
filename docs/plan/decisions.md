@@ -286,3 +286,57 @@ reopen the case design.
 **Consequences.** Adds 1–2 weeks of pilot time. In exchange we ship a
 task whose difficulty is empirically calibrated, not guessed — exactly
 what the TB-Science maintainers asked for.
+
+---
+
+## ADR-0012 — Document the velocity operator-split + NE fitting rule in `formalism.md`
+
+**Status:** Accepted (2026-07-30)
+
+**Context.** PR #584's technical reviewer (AllenGrahamHart, via a local
+GPT analysis) found that `formalism.md`'s written governing equations do
+not match the oracle's forward model, in two places:
+
+1. **Velocity closure.** `formalism.md` §2 wrote the solvent-velocity PDE
+   with the same bracket as the concentration PDE — including the `c v₀`
+   convection term. Solving that pair self-consistently implies
+   `v₀ = V̄[D φ c_x + (1 − t⁺⁰) i/F] / (1 + c V̄)`. But `solver.py:196`
+   (and the reference `pde.py:161`) compute the velocity increment from
+   `_flux(..., jnp.zeros_like(v0), ...)` — the flux with `v₀ = 0` — giving
+   the same expression **without** the `(1 + c V̄)` denominator. This is
+   the published DiffEC operator-split convention, inherited verbatim, but
+   it was never stated in the task. The gap is `O(c V̄)`: ~2–4 % in the
+   dilute cases (passes anyway) but ~27–29 % in case_4 (`c V̄ ≈ 0.4`) —
+   far outside the 15 % velocity tolerance. An agent that faithfully
+   implements the written equations is thus systematically rejected on the
+   concentrated cases; the one passing trial only succeeded by empirically
+   reverse-engineering the hidden convention. Notably `formalism.md`'s own
+   IC (`v₀ = V̄(1 − t⁺⁰)i/F`, no denominator) already matched the oracle —
+   only the second PDE was inconsistent.
+2. **NE counterfactual.** §3.2's lab-frame constraint dropped the
+   thermodynamic factor `(1 − d ln c₀ / d ln c)`, but `invert_ne.py`
+   (via `simulate(lab_frame=True)`) retains it; the ansatz/fitting rule
+   (cubic in normalized c + light Tikhonov, λ=1e-3) was also unstated, and
+   the verifier grades only the regime label, not the `t⁺⁰_NE` number.
+
+**Decision.** Adopt the reviewer's route 2 — **make the spec match the data,
+docs-only, no physics/data/truth change.** (Route 1, regenerating the data
+with a self-consistent-denominator solver, was rejected: it contradicts the
+project contract that the oracle is "a parameterized generalization of
+[DiffEC `solver.py`], not a rewrite," and is far heavier.) Specifically:
+
+- `formalism.md` §2 (all 4 cases): velocity PDE bracket drops `c v₀`; added
+  an explicit "Velocity closure" note + the closed form + an explicit
+  statement that there is **no** `(1 + c V̄)` denominator.
+- `formalism.md` §3.2: NE constraint retains the thermodynamic factor;
+  admissible function class (cubic in `u = (c − c̄)/c_scale`) + regularized
+  LSQ fitting rule (λ=1e-3 on higher-order terms) stated in full.
+- `oracle-spec.md` §2/§3 updated to match (also fixed a stale "50-knot"
+  NE-ansatz description that predated the cubic switch).
+
+**Consequences.** No code, `data.h5`, or `truth.npz` change → the reference
+solution still passes 28/28 unchanged (re-verified 2026-07-30). The task's
+difficulty story shifts slightly: solving no longer requires reverse-
+engineering an undocumented convention, but the core ill-conditioned coupled
+D(c)/t⁺⁰(c) inversion (incl. negative t⁺⁰) remains — the reviewer agreed the
+inverse problem is "legitimate and challenging" once documented.
