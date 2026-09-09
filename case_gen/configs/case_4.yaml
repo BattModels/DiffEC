@@ -93,9 +93,16 @@ current:
 # by narrowing the band). Emergent t+0_NE must stay robustly positive
 # across [2.93, 3.20] — verified at generation time (v1's lab-frame NE
 # crossings sat at ~2.81 / ~3.27; re-checked for the new truth).
+# c_max extended 3.20 → 3.30 (2026-09-09, post mock trial): a cold
+# Opus-5 xhigh run passed with its t⁺⁰ error growing monotonically into
+# the sparse high-c tail (0.037 at 3.20, slope-shrinkage from parsimony
+# priors) — grading deeper into the sustained-slope region separates
+# deliberate weak-regularization inversions (reference: ~0.01 there)
+# from default-regularized ones. Still well inside the data-visited
+# range (c_data reaches ~4.27; no extrapolated grading).
 c_grid:
   c_min: 2.93
-  c_max: 3.20
+  c_max: 3.30
   n: 50
 
 flux_samples:

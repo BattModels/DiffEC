@@ -100,10 +100,10 @@ transition (case_4's crossing at c* ≈ 3.02) without making the label
 check nondeterministic for near-perfect submissions. The agent is told
 the exclusion rule but not which points are masked. Truth files
 without the field grade all 50 points (backward compatibility).
-Current graded counts: 50/50/50/39 → 189 of 200 labels.
+Current graded counts: 50/50/50/42 → 192 of 200 labels.
 
 This is the categorical-pattern discriminator the proposal calls out:
-under any reasonable null model, 189 graded ternary labels are
+under any reasonable null model, 192 graded ternary labels are
 essentially impossible to satisfy by luck — and case_4's mixed-label
 block structure additionally requires *locating* the
 `NE_deviates → NE_wrong_sign` boundary to ~±0.03 mol/L in c, which

@@ -4,7 +4,7 @@
 > 2026-09-09 per ADR-0013** (v0.2 hardening: `t⁺⁰` sign crossing inside
 > the graded band + truth-side regime mask). All four cases pass 32/32
 > verifier checks with ≥ 2.7× margin on every continuous check, exact
-> regime match at every graded point (189 of 200 labels graded), and
+> regime match at every graded point (192 of 200 labels graded), and
 > ADR-0004 anti-cheat against the published Steinrück 2020 / DiffEC
 > paper fit. Calibration deltas vs the initial design are recorded in
 > "Calibration notes" at the bottom.
@@ -51,16 +51,16 @@ family:
 | --- | --- | --- | --- | --- |
 | seed | 12345 | 23456 | 34567 | 45678 |
 | `c_init` (mol/L) | 0.6 | 1.25 | 2.5 | 3.0 |
-| `c_grid` (mol/L) | [0.45, 0.75] | [1.13, 1.49] | [2.42, 2.69] | [2.93, 3.20] |
+| `c_grid` (mol/L) | [0.45, 0.75] | [1.13, 1.49] | [2.42, 2.69] | [2.93, 3.30] |
 | peak current (A/m²) | 4 | 16 | 48 | 32 |
 | `V̄` (m³/mol) | 5×10⁻⁵ (override) | 2.5×10⁻⁴ (override) | ~1.42×10⁻⁴ (rho-derived) | ~1.32×10⁻⁴ (rho-derived) |
 | σ_c (mol/L) | 0.006 (~1 %) | 0.012 (~1 %) | 0.015 (~0.6 %) | 0.018 (~0.6 %) |
 | `invert_ne.init_tp0` | 0.10 | 0.30 | 0.30 | 0.30 |
 | `invert_ne.lambda_reg` | 1×10⁻³ | 1×10⁻³ | 1×10⁻³ | 1×10⁻³ |
-| Realized true `t⁺⁰` range | [0.096, 0.104] | [0.215, 0.263] | [-0.408, -0.346] | [-0.180, +0.090], crossing c*≈3.02 |
-| Realized lab-frame `t⁺⁰_NE` range | [0.117, 0.119] | [0.365, 0.457] | [0.024, 0.051] | [0.221, 0.384] |
-| Realized regime distribution | 50× NE_valid | 50× NE_deviates | 50× NE_wrong_sign | 17× NE_deviates + 33× NE_wrong_sign |
-| Regime-graded points (ADR-0013 mask) | 50/50 | 50/50 | 50/50 | 39/50 (11 masked at the crossing) |
+| Realized true `t⁺⁰` range | [0.096, 0.104] | [0.215, 0.263] | [-0.408, -0.346] | [-0.280, +0.090], crossing c*≈3.02 |
+| Realized lab-frame `t⁺⁰_NE` range | [0.117, 0.119] | [0.365, 0.457] | [0.024, 0.051] | [0.153, 0.375] |
+| Realized regime distribution | 50× NE_valid | 50× NE_deviates | 50× NE_wrong_sign | 12× NE_deviates + 38× NE_wrong_sign |
+| Regime-graded points (ADR-0013 mask) | 50/50 | 50/50 | 50/50 | 42/50 (8 masked at the crossing) |
 
 `t⁺⁰(c)` and `D(c)` tables per case are the YAML truth tables in
 `case_gen/configs/case_X.yaml`; pinned values reproduced under each
@@ -192,10 +192,10 @@ ADR-0004: max |Δt⁺⁰_lit| = 0.17 (≥ 2× the verifier threshold).
 
 **Regime intent.** The true `t⁺⁰(c)` crosses zero *inside* c_grid at
 c* ≈ 3.02 mol/L (between grid points 16 and 17) while the emergent
-lab-frame `t⁺⁰_NE` stays robustly positive ([0.221, 0.384]) across the
+lab-frame `t⁺⁰_NE` stays robustly positive ([0.153, 0.375]) across the
 band. The 50 labels therefore split into an `NE_deviates` block
-(idx 0–16, `t⁺⁰ > 0`, gap to `t⁺⁰_NE` ≥ 0.25) and an `NE_wrong_sign`
-block (idx 17–49). Recovering the block boundary requires locating the
+(idx 0–11, `t⁺⁰ > 0`, gap to `t⁺⁰_NE` ≥ 0.25) and an `NE_wrong_sign`
+block (idx 12–49). Recovering the block boundary requires locating the
 sign crossing to ~±0.03 mol/L — pointwise `t⁺⁰` accuracy ~0.03 near
 c*, deliberately **sharper than check #2's 0.05 gate**. The NE
 inversion and the local `t⁺⁰` shape are load-bearing; labels are no
@@ -204,13 +204,14 @@ longer implied by the case's overall regime.
 **Label-robustness mask (ADR-0013).** The verifier grades labels only
 where `|t⁺⁰_oracle| ≥ 0.03` (`regime_graded` in `truth.npz`; rule
 quoted abstractly in `formalism.md` §4 without revealing which points
-are masked). For this case 11 points around the crossing are masked →
-39/50 graded. δ = 0.03 ≈ 2.7× the reference's worst-point `t⁺⁰` error,
+are masked). For this case 8 points around the crossing are masked →
+42/50 graded. δ = 0.03 ≈ 2.7× the reference's worst-point `t⁺⁰` error,
 so the reference's labels are sign-safe with margin. Cases 1–3 are
 unaffected (their min `|t⁺⁰|` ≥ 0.085).
 
 **Final design (`case_4.yaml`).** `c_init = 3.0` (just below c*),
-c_grid [2.93, 3.20], peak current 32 A/m², `V̄` rho-derived
+c_grid [2.93, 3.30] (c_max extended from 3.20 on 2026-09-09 — see the
+mock-trial note below), peak current 32 A/m², `V̄` rho-derived
 (~1.32×10⁻⁴ m³/mol). Unchanged from v1 except the `t⁺⁰` table.
 
 True material functions:
@@ -224,27 +225,38 @@ D (cm²/s):   1.5e-6 1.2e-6 9.0e-7 6.5e-7 4.5e-7 3.8e-7 3.6e-7(at 3.0) 3.0e-7(3.
 (`D` keeps the v1 table on knots 0.0–4.0.) `t⁺⁰(c)` declines gently to
 a knee at c = 2.85 (below the graded band), then drops linearly at
 slope −1.0 /(mol/L) through zero at c* = 3.02, leveling off above
-3.35. On c_grid the truth runs from +0.090 down to −0.180. The steep
+3.35. On c_grid the truth runs from +0.090 down to −0.280. The steep
 slope keeps the masked band narrow (|t⁺⁰| < 0.03 spans ~0.06 mol/L
-≈ 11 grid points).
+≈ 8 grid points at the widened Δc).
 
 **Designed failure modes caught.**
 
-- **Lab-frame agents:** recover `t⁺⁰_NE` ∈ [+0.22, +0.38] instead of
-  the true [+0.09, −0.18] → check #2 worst = 0.40 = 8× threshold,
-  check #6 RMSE/max = 0.256 = 1.7× threshold, and **all 39 graded
+- **Lab-frame agents:** recover `t⁺⁰_NE` ∈ [+0.15, +0.38] instead of
+  the true [+0.09, −0.28] → check #2 worst = 0.43 = 8.7× threshold,
+  check #6 RMSE/max = 0.252 = 1.7× threshold, and **all 42 graded
   labels wrong**.
 - **Case-constant labelers** (agents that classify the whole case from
-  its dominant regime, without a pointwise NE comparison): at best 28
-  of 39 graded labels — check #3 fails.
+  its dominant regime, without a pointwise NE comparison): at best 30
+  of 42 graded labels — check #3 fails.
 - **Over-smoothed inversions:** a strong smoothness prior biases the
   recovered slope near c* (the reference's own λ = 10⁻³ rung shrinks it
   ~25 %, shifting the recovered crossing and D by up to 12 % at the
   high-c tail). Passing requires letting the data set the local slope —
   the reference does this via data-driven λ selection (see below).
 
-**Expected regime labels.** 17× NE_deviates + 33× NE_wrong_sign
-(39 graded: 11 NE_deviates + 28 NE_wrong_sign).
+**Expected regime labels.** 12× NE_deviates + 38× NE_wrong_sign
+(42 graded: 12 NE_deviates + 30 NE_wrong_sign).
+
+**Mock-trial evidence for the 3.30 extension (2026-09-09).** A cold
+containerized Opus-5-xhigh mock trial passed the [2.93, 3.20] version
+(reward 1.0, 27 min) with its case_4 t⁺⁰ error growing monotonically
+into the sparse tail — 0.037 at 3.20 (1.35× margin), the classic
+parsimony-prior slope shrinkage; near the crossing it was ~0.005 and it
+located c* to 0.001. Extending c_max to 3.30 puts that same solution
+class at ~0.052 > 0.05 at the new endpoint (fail), while the reference
+(data-driven λ selection) sits at 0.021 there (2.4× margin). Anti-cheat
+re-verified on the wider band (lit min-distance 0.12; cheat table
+above).
 
 ---
 
@@ -284,7 +296,7 @@ agent's submission"), then comparing the resulting `v₀` to `v_data`:
 | case_1 | 0.042 | 0.045 (pass — by design) | 0.021 (pass — by design) | 0/50 (pass — by design) |
 | case_2 | 0.042 | **0.209 (catch)** | **0.214 = 4× threshold** | **50/50** |
 | case_3 | 0.057 | **0.225 (catch)** | **0.432 = 9× threshold** | **50/50** |
-| case_4 | 0.049 | **0.256 (catch)** | **0.401 = 8× threshold** | **39/39** |
+| case_4 | 0.047 | **0.252 (catch)** | **0.433 = 8.7× threshold** | **42/42** |
 
 (Re-measured 2026-09-09 after the ADR-0013 case_4 redesign; the cheat's
 labels are all `NE_valid` since its `t⁺⁰` equals its `t⁺⁰_NE`.)

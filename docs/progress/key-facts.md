@@ -321,10 +321,12 @@ Reference-solution worst-point ratios vs tolerance (ratio < 1 = pass;
 | 1 | 0.17 | 0.26 | 0/50 | 0.28 | 0.01 | 0.042 |
 | 2 | 0.22 | 0.20 | 0/50 | 0.28 | 0.00 | 0.042 |
 | 3 | 0.22 | 0.09 | 0/50 | 0.28 | 0.13 | 0.057 |
-| 4 | 0.36 | 0.17 | 0/39 | 0.29 | 0.03 | 0.049 |
+| 4 | 0.39 | 0.42 | 0/42 | 0.29 | 0.03 | 0.047 |
 
-All ≥ 2.7× margin. Lab-frame cheat and literature-lookup catches
-re-verified (see case-design.md tables).
+All ≥ 2.3× margin. Lab-frame cheat and literature-lookup catches
+re-verified (see case-design.md tables). Case_4 numbers are for the
+c_grid extended to 3.30 (mock-trial-driven, see below); its t⁺⁰ worst
+point (0.021 abs) is the new high-c endpoint.
 
 ### Gotcha: a global t⁺⁰ smoothness weight cannot serve all cases
 
@@ -351,7 +353,25 @@ through the template, then `generate --all`.
 ### Regime mask (ADR-0013)
 
 `regime_graded = |t⁺⁰_oracle| ≥ 0.03` stored per case in `truth.npz`;
-verifier grades labels only there (graded counts 50/50/50/39 = 189/200).
-δ = 0.03 ≈ 2.7× the reference's worst-point t⁺⁰ error. The masked-band
-width is set by the truth slope at the crossing (−1.0 /(mol/L) → ~11
-masked points); a shallower crossing would mask proportionally more.
+verifier grades labels only there (graded counts 50/50/50/42 = 192/200).
+δ = 0.03 is ~2.7× the reference's t⁺⁰ error near the crossing (~0.011;
+its global worst 0.021 sits at the far c_grid endpoint, not near c*).
+The masked-band width is set by the truth slope at the crossing
+(−1.0 /(mol/L) → ~8 masked points at Δc = 0.0076); a shallower crossing
+would mask proportionally more.
+
+### Mock-trial-driven c_grid extension to 3.30 (2026-09-09)
+
+Cold containerized mock trial (harbor, subscription auth, full
+isolation): claude-opus-5 xhigh PASSED the [2.93, 3.20] hardened task
+(reward 1.0, 27 min, ~29 agent turns). Its method: BIC-selected
+polynomial joint inversion + σ-weighted c+v loss — a genuinely correct
+solve; it located c* to 0.001 and hit all 39 graded labels. BUT its
+t⁺⁰ error grew monotonically into the sparse high-c tail (0.028@3.13 →
+0.037@3.20 = 1.35× margin; D 0.053@3.20), the signature of
+parsimony-prior slope shrinkage the truth's post-crossing steepness is
+designed to punish. Extending c_max 3.20 → 3.30 (still inside the
+data-visited range, c_data max ≈ 4.27) puts that solution class at
+~0.052 > 0.05 at the new endpoint while the reference sits at 0.021
+(2.4× margin). Trial artifacts:
+`mock_exam/results/mock-opus5-hardened__20260909-204211/` (gitignored).
