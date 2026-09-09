@@ -375,3 +375,15 @@ data-visited range, c_data max ≈ 4.27) puts that solution class at
 ~0.052 > 0.05 at the new endpoint while the reference sits at 0.021
 (2.4× margin). Trial artifacts:
 `mock_exam/results/mock-opus5-hardened__20260909-204211/` (gitignored).
+
+### Confirmation mock trial on the 3.30 task (2026-09-09): FAIL, as designed
+
+Same Opus-5-xhigh config vs the extended band: **reward 0.0, 31/32** —
+sole fail `test_D[case_4]` rel_err 0.1003 at idx 0 (c = 2.93, low-c
+graded edge; data-bulk region, reference margin 2.5× there). Cause:
+Chebyshev global-polynomial ansatz with Δχ²-based order selection →
+model bias ~10 % at the band edge (agent's own 1σ ≈ 2.7 % — bias, not
+noise, binds). All graded labels correct; its label-split disagreement
+with truth sits entirely inside the |t⁺⁰| < 0.03 mask. Agent spent 3.7 M
+input tokens / $4.58 / ~75 min vs 27 min for the 3.20-version pass.
+Mock evidence: 1/2 Opus-5-xhigh solves on the hardened task.
