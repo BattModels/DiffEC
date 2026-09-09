@@ -173,13 +173,20 @@ For each `c_grid[i]`, classify mechanically:
 | same sign and `|t⁺⁰[i] − t⁺⁰_NE[i]| ≥ 0.05`                        | `NE_deviates`     |
 | `|t⁺⁰[i] − t⁺⁰_NE[i]| < 0.05`                                      | `NE_valid`        |
 
+Your `regime` array must contain all 50 labels. The verifier, however,
+grades the label at a grid point only where the oracle's underlying
+`|t⁺⁰(c_grid[i])| ≥ 0.03`; grid points closer to a sign change than that
+are excluded from label grading. Which points (if any) are excluded is
+not revealed.
+
 ## 5. Evaluation criteria
 
 A deterministic pytest verifier checks five quantities per case:
 
 1. `|D_you(c) − D_oracle(c)| / D_oracle(c) ≤ 0.10` at every `c_grid` point.
 2. `|t⁺⁰_you(c) − t⁺⁰_oracle(c)| ≤ 0.05` at every `c_grid` point.
-3. Exact match on the 50 regime labels.
+3. Exact match on the regime labels at every graded grid point (see §4
+   for the exclusion rule).
 4. `sqrt(mean((v_pred − v_data)²)) / max|v_data| ≤ 0.15` (RMS error over the
    Nt×Nx grid, divided by `max|v_data|` — not the raw Euclidean norm).
 5. Flux decomposition at all 10 points: each of `{J_diff, J_mig, J_conv}`
@@ -238,6 +245,7 @@ def write_truth_npz(
     tp0_oracle: np.ndarray,
     tp0_NE_oracle: np.ndarray,
     regime: np.ndarray,
+    regime_graded: np.ndarray,
     c_grid: np.ndarray,
     c_data: np.ndarray,
     v_data: np.ndarray,
@@ -272,6 +280,7 @@ def write_truth_npz(
         t_plus_0=np.asarray(tp0_oracle, dtype=np.float64),
         t_plus_0_NE=np.asarray(tp0_NE_oracle, dtype=np.float64),
         regime=np.asarray(regime, dtype="U16"),
+        regime_graded=np.asarray(regime_graded, dtype=bool),
         c_grid=np.asarray(c_grid, dtype=np.float64),
         c_data=np.asarray(c_data, dtype=np.float64),
         v_data=np.asarray(v_data, dtype=np.float64),

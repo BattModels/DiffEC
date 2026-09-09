@@ -37,6 +37,10 @@ config.update("jax_enable_x64", True)
 
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
+
+# ADR-0013: regime labels are graded only where the oracle's |t⁺⁰| clears
+# this sign-safety band. Quoted verbatim in formalism.md §4 — keep in sync.
+REGIME_MASK_MIN_ABS_TP0 = 0.03
 TASK_ROOT = (
     REPO_ROOT
     / "tasks/physical-sciences/chemistry/concentrated-electrolyte-transport"
@@ -263,9 +267,12 @@ def generate_case(config_path: Path, verbose: bool = True) -> None:
          for i in range(c_grid.size)],
         dtype="U16",
     )
+    regime_graded = np.abs(tp0_oracle) >= REGIME_MASK_MIN_ABS_TP0
     if verbose:
         from collections import Counter
         print(f"regime distribution: {dict(Counter(regime.tolist()))}")
+        print(f"regime graded: {int(regime_graded.sum())}/{regime_graded.size} "
+              f"(mask |t⁺⁰| < {REGIME_MASK_MIN_ABS_TP0})")
 
     # ------------------------------------------------- flux samples
     flux_cfg = cfg["flux_samples"]
@@ -328,6 +335,7 @@ def generate_case(config_path: Path, verbose: bool = True) -> None:
         tp0_oracle=tp0_oracle,
         tp0_NE_oracle=tp0_NE_oracle,
         regime=regime,
+        regime_graded=regime_graded,
         c_grid=c_grid,
         c_data=c_data,
         v_data=v_data,

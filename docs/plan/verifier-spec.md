@@ -89,12 +89,26 @@ NE_valid       if |t⁺⁰[i] − t⁺⁰_NE[i]| < 0.05
 
 The oracle's `regime_oracle[50]` is computed from
 `(t⁺⁰_oracle, t⁺⁰_NE_oracle)` once at case-generation time and stored in
-`truth.npz`. The verifier checks **exact match** at all 50 points per
-case (200 across the 4 cases).
+`truth.npz`. The verifier checks **exact match at every graded point**.
+
+**Grading mask (ADR-0013).** Also stored in `truth.npz` is
+`regime_graded[50]` = `|t⁺⁰_oracle| ≥ 0.03`
+(`case_gen/generate.REGIME_MASK_MIN_ABS_TP0`, quoted in `formalism.md`
+§4): grid points closer to a `t⁺⁰` sign change than the sign-safety
+band are excluded from label grading, so a case may span a regime
+transition (case_4's crossing at c* ≈ 3.02) without making the label
+check nondeterministic for near-perfect submissions. The agent is told
+the exclusion rule but not which points are masked. Truth files
+without the field grade all 50 points (backward compatibility).
+Current graded counts: 50/50/50/39 → 189 of 200 labels.
 
 This is the categorical-pattern discriminator the proposal calls out:
-under any reasonable null model, 200 ternary labels are essentially
-impossible to satisfy by luck.
+under any reasonable null model, 189 graded ternary labels are
+essentially impossible to satisfy by luck — and case_4's mixed-label
+block structure additionally requires *locating* the
+`NE_deviates → NE_wrong_sign` boundary to ~±0.03 mol/L in c, which
+demands pointwise `t⁺⁰` accuracy sharper than check #2's 0.05 gate
+near the crossing.
 
 ## 4. Velocity-field RMSE (`tests/test_velocity.py`)
 

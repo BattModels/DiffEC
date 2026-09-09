@@ -1,27 +1,37 @@
-# Case 4 — NE-wrong-sign at high concentration.
+# Case 4 — NE-transition: t+0 sign crossing inside the graded band.
 #
-# Regime intent (docs/plan/case-design.md §"Case 4"):
-#   Companion to case_3 at higher concentration. True t+0(c) is deeply
-#   negative throughout c_grid ([-0.20, -0.18] in c_grid [2.93, 3.20]),
-#   so lab-frame agents (which structurally recover positive t+0_NE)
-#   fail catastrophically on check #2 and check #6.
+# Regime intent (ADR-0013; docs/plan/case-design.md §"Case 4"):
+#   The true t+0(c) crosses zero INSIDE c_grid (c* ~ 3.02 mol/L, between
+#   grid points), while the emergent lab-frame t+0_NE stays well positive
+#   across the band. The 50 labels therefore split into an NE_deviates
+#   block (low-c side, t+0 > 0), a masked band around the crossing
+#   (|t+0_oracle| < 0.03 is excluded from label grading — see
+#   generate.REGIME_MASK_MIN_ABS_TP0 and formalism.md §4), and an
+#   NE_wrong_sign block (high-c side, t+0 < 0). Recovering the block
+#   boundary requires locating the sign crossing to ~±0.03 mol/L, i.e.
+#   pointwise t+0 accuracy ~0.03 near c* — sharper than check #2's 0.05.
+#   This makes the NE inversion and the local t+0 shape load-bearing;
+#   labels are no longer implied by getting the case's overall regime
+#   right.
 #
-# Originally scoped as a "multi-modal basin trap" for single-start
-# BFGS optimization: two well-separated basins (positive-t+0 lab-frame
-# vs negative-t+0 moving-frame) with the wrong basin near a
-# literature-prior init. In practice, our reference solver's joint
-# c+v inverse reliably finds the correct negative basin from a
-# +0.30 init — the trap does not materialize with v_data-weighted
-# joint fitting. Renamed to reflect what the case actually tests.
-# See docs/plan/case-design.md §"Case 4" and docs/session.md
-# (2026-06-25) for the design-vs-actual story.
+# History: v1 of this case ("NE-wrong-sign at high c", t+0 in
+# [-0.20, -0.18] across c_grid) duplicated case_3's discriminator after
+# its original basin-trap intent was dropped (2026-06-25). Redesigned
+# 2026-09-09 per ADR-0013 after Opus-5 passed 3/3 reviewer trials.
+#
+# t+0 truth shape: gentle decline to a knee at c = 2.85 (below the graded
+# band), then a steep linear drop (slope -1.0 per mol/L) through zero at
+# c* = 3.02, leveling off above 3.35. On the graded band [2.93, 3.20] the
+# truth runs from +0.09 down to -0.18. The steep slope keeps the masked
+# band narrow (|t+0| < 0.03 spans ~0.06 mol/L ~ 11 of 50 grid points).
 #
 # Discrimination vs case_3:
-# - case_3: c_init=2.5, c_grid [2.42, 2.69], V_bar override 2.5e-4.
-# - case_4: c_init=3.0, c_grid [2.93, 3.20], V_bar rho-derived (~1.32e-4).
+# - case_3: c_init=2.5, c_grid [2.42, 2.69], deeply negative throughout.
+# - case_4: c_init=3.0, c_grid [2.93, 3.20], sign crossing inside the band,
+#   V_bar rho-derived (~1.32e-4).
 
 case_id: case_4
-description: "NE-wrong-sign at high c: deeply negative t+0 throughout c_grid; lab-frame agents fail checks #2/#6 catastrophically."
+description: "NE-transition: t+0 crosses zero inside c_grid; agents must locate the NE_deviates -> NE_wrong_sign label boundary, which needs local t+0 accuracy sharper than check #2."
 seed: 45678
 
 # --- Geometry ----------------------------------------------------------
@@ -37,7 +47,7 @@ time:
 
 # --- Initial condition -------------------------------------------------
 initial:
-  c_init: 3.0     # mol/L, middle of c_grid
+  c_init: 3.0     # mol/L, just below the t+0 sign crossing at c* ~ 3.02
 
 # --- Material polynomials ---------------------------------------------
 material:
@@ -50,41 +60,39 @@ material:
     d: 0.007606
   # Realistic V_bar at c_avg=3.0 ~ 1.3e-4 m^3/mol (rho-derived).
 
-  # D(c): smoothly decreasing with a shoulder/plateau near c=3.0
-  # (case_4 c_grid sits inside this plateau, so D varies only ~4 %
+  # D(c): unchanged from v1 — smoothly decreasing with a shoulder/plateau
+  # near c=3.0 (c_grid sits inside this plateau, so D varies only ~4 %
   # across c_grid — well-matched to a 10-knot piecewise-linear fit
   # spanning the wider c_data range).
   D_table_cgs:
     c_mol_per_L: [0.0,    0.5,    1.0,    1.5,    2.0,    2.5,    3.0,    3.5,    4.0]
     D_cm2_per_s: [1.5e-6, 1.2e-6, 9.0e-7, 6.5e-7, 4.5e-7, 3.8e-7, 3.6e-7, 3.0e-7, 2.5e-7]
-  # t+0(c): moderately negative across c_grid with non-monotone
-  # recovery at very high c. Magnitude is SHALLOWER than the published
-  # Steinrück fit at c >= 2.9 — designed to land at least 0.10 above
-  # Steinrück's line at every c_grid point (avoids ADR-0004 lookup
-  # attack). In c_grid [2.93, 3.20] true tp0 spans roughly
-  # [-0.18, -0.20] — clearly negative for the NE_wrong_sign
-  # discriminator, but distinct from any literature linear fit.
+  # t+0(c): positive and gently declining up to the knee at 2.85, then a
+  # steep -1.0 per mol/L drop through zero at c* = 3.02 (between grid
+  # points 16 and 17 of the 50-point c_grid), leveling off above 3.35.
+  # ADR-0004 anti-cheat: the published Steinrück/DiffEC linear fit is
+  # deeply negative across [2.93, 3.20]; our +0.09 value at the low-c
+  # edge alone puts max pointwise distance >> 0.10 (verified via
+  # scripts/litvalue_distance.py after regeneration).
   tp0_table:
-    c_mol_per_L: [0.0,  0.5,  1.0,  1.5,  2.0,   2.5,   3.0,   3.5,   4.0]
-    tp0:         [0.40, 0.30, 0.20, 0.05, -0.05, -0.15, -0.20, -0.15, -0.10]
+    c_mol_per_L: [0.0,  0.5,  1.0,  1.5,  2.0,  2.5,  2.85,  3.35,  3.6,   4.0]
+    tp0:         [0.42, 0.38, 0.33, 0.28, 0.24, 0.20, 0.17, -0.33, -0.38, -0.42]
 
 # --- Applied current schedule -----------------------------------------
 current:
   schedule: ramp_hold_ramp
-  peak_A_per_cm2: 3.2e-3      # 32 A/m^2 (same as original case_3)
+  peak_A_per_cm2: 3.2e-3      # 32 A/m^2 (unchanged from v1)
   ramp_up_s: 100.0
   hold_s: 900.0
   ramp_down_s: 100.0
 
 # --- Reporting grids ---------------------------------------------------
-# c_grid in deep-negative-tp0 region. c_init = 3.0 sits inside c_grid
-# so data density supports the reporting grid (per case_3 lesson).
-# Narrowed from [2.70, 3.30] to [2.85, 3.22] to exclude the lab-frame
-# tp_NE zero crossings (~ c=2.81 and c=3.27) — those would cause
-# regime label flips between oracle and agent NE-inversion
-# implementations at the crossings (case_3-style borderline issue).
-# Inside [2.85, 3.22]: oracle tp_NE > 0 robustly, true tp < 0 -> all
-# NE_wrong_sign labels stable.
+# c_grid deliberately spans the t+0 sign crossing (ADR-0013 reverses the
+# 2026-06-26 "single-regime band" rule for this case; label determinism
+# near the crossing is handled by the truth-side regime_graded mask, not
+# by narrowing the band). Emergent t+0_NE must stay robustly positive
+# across [2.93, 3.20] — verified at generation time (v1's lab-frame NE
+# crossings sat at ~2.81 / ~3.27; re-checked for the new truth).
 c_grid:
   c_min: 2.93
   c_max: 3.20

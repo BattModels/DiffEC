@@ -310,3 +310,48 @@ Result: all 4 cases now pass 28/28 with regime labels matching
 
 Target aggregate band per ADR-0008: **10–20 %**.
 Failure-mode classification per agent goes in `docs/progress/pilot_run.md`.
+
+## ADR-0013 hardening margins (2026-09-09, post case_4 redesign)
+
+Reference-solution worst-point ratios vs tolerance (ratio < 1 = pass;
+32/32 green; `_local_results` from the λ-ladder reference):
+
+| Case | D (÷0.10) | t⁺⁰ (÷0.05) | graded regime miss | v-RMSE (÷0.15) | flux (÷0.15) | honest #6 |
+|---|---|---|---|---|---|---|
+| 1 | 0.17 | 0.26 | 0/50 | 0.28 | 0.01 | 0.042 |
+| 2 | 0.22 | 0.20 | 0/50 | 0.28 | 0.00 | 0.042 |
+| 3 | 0.22 | 0.09 | 0/50 | 0.28 | 0.13 | 0.057 |
+| 4 | 0.36 | 0.17 | 0/39 | 0.29 | 0.03 | 0.049 |
+
+All ≥ 2.7× margin. Lab-frame cheat and literature-lookup catches
+re-verified (see case-design.md tables).
+
+### Gotcha: a global t⁺⁰ smoothness weight cannot serve all cases
+
+`LAMBDA_SMOOTH_TP = 1e-3` (v0.1 reference) flattens case_4's steep
+`t⁺⁰(c)` transition — recovered slope biased ~25 % low, D up to 12 % off
+at the high-c tail → reference FAILED checks #1/#2 on the redesigned
+case. But dropping to 1e-5 globally makes case_1's weakly-constrained
+`t⁺⁰` oscillate (worst error 0.060 > 0.05 gate): its wiggle is
+data-irrelevant (misfit changes < 0.05 % across λ), which is exactly why
+only the prior can suppress it. Fix: per-case λ selection from the
+ladder (1e-3, 1e-5), keeping the largest λ whose pure data misfit is
+within `DATAFIT_TOL = 1.002` of the best rung. Selected: cases 1–2 →
+1e-3, cases 3–4 → 1e-5. Deterministic; ~2× joint-inverse cost
+(~2 min/case, still ≪ budget).
+
+### Gotcha: `case_gen/writers.py::FORMALISM_MD` must be kept in sync
+
+The shipped `formalism.md` files were patched directly during v0.1
+review (velocity closure, §3.2 rule, §5 RMS wording) without updating
+the template — a regeneration would have silently reverted three
+reviewer fixes. Synced 2026-09-09 (`553c517`). Any future spec edit goes
+through the template, then `generate --all`.
+
+### Regime mask (ADR-0013)
+
+`regime_graded = |t⁺⁰_oracle| ≥ 0.03` stored per case in `truth.npz`;
+verifier grades labels only there (graded counts 50/50/50/39 = 189/200).
+δ = 0.03 ≈ 2.7× the reference's worst-point t⁺⁰ error. The masked-band
+width is set by the truth slope at the crossing (−1.0 /(mol/L) → ~11
+masked points); a shallower crossing would mask proportionally more.

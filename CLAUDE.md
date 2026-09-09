@@ -70,7 +70,8 @@ Ship a complete, mergeable Harbor task that:
 ### Verifier (deterministic pytest, 5 checks)
 1. `|D_agent − D_oracle| / D_oracle ≤ 0.10` at every c_grid point.
 2. `|t⁺⁰_agent − t⁺⁰_oracle| ≤ 0.05` at every c_grid point.
-3. Exact match on the 200 regime labels.
+3. Exact match on the graded regime labels (points with oracle `|t⁺⁰| < 0.03`
+   are ungraded per ADR-0013; currently 189 of 200 graded).
 4. `||v_pred − v_data||₂ / max|v_data| ≤ 0.15`.
 5. Flux decomposition at 10 points: each component within `0.15 · |J_total_oracle|`.
 6. Self-consistency: verifier reruns its own moving-frame solver from the
@@ -81,7 +82,7 @@ Ship a complete, mergeable Harbor task that:
 - **Case 1 (NE-valid):** weak ion-solvent correlation; `t⁺⁰ > 0` everywhere; lab-frame agents pass.
 - **Case 2 (NE-deviates):** moderate correlation; signs agree but magnitudes diverge; lab-frame agents fail check #1 or #5.
 - **Case 3 (NE-wrong-sign):** Steinrück-2020-like sign flip at high c; lab-frame agents fail catastrophically; the headline case.
-- **Case 4 (NE-wrong-sign, high c):** deeply negative `t⁺⁰` at higher concentration (c_grid ≈ [2.93, 3.20], `t⁺⁰` ∈ [-0.20, -0.18]). Companion to case 3; lab-frame agents fail catastrophically on checks #2 and #6. Originally scoped as a multi-modal basin trap but the v-data-weighted joint inverse reliably finds the correct basin from a literature-prior init.
+- **Case 4 (NE-transition, ADR-0013):** true `t⁺⁰` crosses zero *inside* c_grid ([2.93, 3.20], `t⁺⁰` from +0.09 to −0.18, crossing at c* ≈ 3.02) while `t⁺⁰_NE` stays positive → labels split 17× NE_deviates / 33× NE_wrong_sign (39 graded, 11 masked at the crossing). Locating the label boundary needs pointwise `t⁺⁰` accuracy ~0.03 — sharper than check #2. Lab-frame agents fail #2/#3/#6 catastrophically. (v1 — flat deeply-negative `t⁺⁰`, redundant with case 3 — was redesigned for v0.2 hardening after Opus-5 passed 3/3 reviewer trials.)
 
 ## Design Constraints
 
