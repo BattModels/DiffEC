@@ -340,3 +340,114 @@ difficulty story shifts slightly: solving no longer requires reverse-
 engineering an undocumented convention, but the core ill-conditioned coupled
 D(c)/t⁺⁰(c) inversion (incl. negative t⁺⁰) remains — the reviewer agreed the
 inverse problem is "legitimate and challenging" once documented.
+
+## ADR-0013 — v0.2 hardening: de-scaffolded spec + mixed-regime case_4
+
+**Status:** Accepted (2026-09-09; user approval of the L1+L2 package;
+reviewer mandate AaronFeller 2026-08-21: "pass rate seems a bit high …
+you may need to harden the task, if possible")
+
+**Context.** Since the ADR-0012 velocity-closure fix, `claude-opus-5`
+(`reasoning_effort=xhigh`) has passed 3/3 reviewer `/run`s (Aug 12/14/21),
+each with ~4× margin on the D/t⁺⁰ gates in ~half the time budget, while
+Fable 5.1 reports 52.6 % on TB-Science 0.1 overall. The 2026-08-21 noise
+experiment (`_harden_results/`) closed the margin-based levers empirically:
+at 4× noise the reference solution itself fails (case_1 t⁺⁰ ratio 1.01,
+case_4 D 1.18), and a top agent that finds the correct method matches the
+reference's ~0.02 accuracy — so no noise level or tolerance separates a
+correct agent from the oracle. Hardening must make the correct method
+harder to find or execute, while the reference still passes
+deterministically with ≥2× margin.
+
+**Decision.** Two measures for v0.2 (deadline 2026-10-05):
+
+1. **L1 — De-scaffold the agent-facing spec.** Remove *guidance* content,
+   keep every *contract* element verbatim:
+   - `formalism.md` (template `case_gen/writers.py::FORMALISM_MD`): delete
+     §3.3.1 entirely (worked flux example, sign-convention bullets,
+     common-pitfalls list). Units remain fully declared in §1/§3.3;
+     recognizing the conversions becomes the agent's job again.
+   - `instruction.md`: delete the method-advice paragraph ("You may use
+     any numerical approach … too slow … too brittle. Choose
+     accordingly.") — it explicitly warns about single-start optimization
+     on multi-modal landscapes, i.e. hands over the strategy.
+   - Retained verbatim: frame/sign conventions, the ADR-0012 velocity
+     closure note, the §3.2 NE fitting rule (factor retained, cubic
+     ansatz, λ=1e-3, `max(mean(c_data²),1)` floor), §3.3 flux formulas,
+     §4 regime rule, §5 tolerances, output schema. The de-scaffold must
+     not reopen the ADR-0012 class of spec-vs-code ambiguity.
+
+2. **L2 — Redesign case_4 into a mixed-regime transition case.** New truth
+   `t⁺⁰(c)` crosses zero *inside* the graded c_grid band while the
+   emergent `t⁺⁰_NE` stays well positive across it, so the 50 labels split
+   into an `NE_deviates` block and an `NE_wrong_sign` block whose boundary
+   must be recovered from the data. This makes the NE inversion
+   load-bearing (labels are currently case-constant and effectively free
+   once the case-level physics is right). Case_4 is the case to spend: its
+   discriminator duplicates case_3's, and its original basin-trap intent
+   was dropped in June. Keeping 4 cases avoids touching instruction,
+   verifier count, container plumbing, and the time budget.
+
+   **Label-robustness mask** (deliberately supersedes the 2026-06-26
+   calibration rule "narrow c_grid to a single-regime band" for this
+   case): the regime check grades only grid points where
+   `|t⁺⁰_oracle| ≥ 0.03`. The mask is computed at case-generation time
+   from truth (`regime_graded` bool[50] in `truth.npz`) and never shipped
+   to the agent; the agent-facing spec states the exclusion rule
+   abstractly (it reveals nothing about *where* the crossing is, since
+   the agent does not know `t⁺⁰_oracle`). δ = 0.03 ≈ 2.7× the reference
+   solution's worst-point t⁺⁰ error (~0.011), so the reference's labels
+   at graded points are sign-safe with margin, while an agent at the
+   check-#2 limit (0.05) can no longer collect the labels for free — near
+   the crossing the label check is deliberately sharper than check #2.
+   Truth `t⁺⁰(c)` is steepened near the crossing (target slope ≳1 /(mol/L))
+   to keep the masked band a small minority of points (target ≤ ~10 of 50).
+   The same rule applies to cases 1–3 vacuously (their min |t⁺⁰| ≥ 0.085).
+
+**Stretch (separate go/no-go, not committed here):** L3 — sparse velocity
+data (bundle `v_data` at a few x-locations to re-arm the genuine basin
+trap). Requires a multi-start reference and re-scoped checks #4/#6; decide
+only after L1+L2 are validated and only if ≥2 weeks remain before freeze.
+
+**Rejected alternatives.**
+- Tighter tolerances / more noise: empirically closed (Context above);
+  the identifiability audit additionally showed the per-point D gate at
+  sparse high-c knots is already ~2× tighter than local data power.
+- Unknown thermodynamic factor: likely identifiability collapse (data
+  constrains products like D·φ) and a scope change vs. approved proposal
+  #335.
+- Bigger grids / compute pressure: taxes wall-clock, not understanding;
+  the near-miss rubric explicitly credits the task for not inflating
+  difficulty artificially.
+
+**Success target.** Opus-5-xhigh ≤ ~1/5 reviewer trials; reference passes
+32/32 deterministically with ≥2× margin on every continuous check;
+anti-cheat matrix (lab-frame, literature-lookup, v_pred:=v_data) still
+catches on all non-calibration cases; proposal's 10–20 % band restored
+against the strongest graded agent.
+
+**Consequences.**
+- **Precondition fix:** `case_gen/writers.py::FORMALISM_MD` is stale —
+  it predates ADR-0012 (velocity closure), the §3.2 fitting-rule pin, and
+  the §5 RMS wording, so regeneration today would silently revert three
+  reviewer fixes. Sync the template to the shipped formalism.md first
+  (verified byte-identical by regenerating), in its own commit, before
+  any hardening edits.
+- `case_gen/configs/case_4.yaml`: new `tp0_table` (zero crossing inside
+  c_grid, steep near c*), possibly widened c_grid / retuned current;
+  regenerate case_4 artifacts; re-run the ADR-0004 anti-cheat audit and
+  the lab-frame cheat matrix for the new case.
+- `case_gen/generate.py`: emit `regime_graded` into `truth.npz`.
+- `tests/test_outputs.py::test_regime`: grade only masked-in points
+  (backward-compatible: truth files without `regime_graded` grade all).
+- `formalism.md` §4/§5 + `instruction.md` check list: state the exclusion
+  rule; §3.3.1 removed; method-advice paragraph removed.
+- Docs in the same commits: `case-design.md` case_4 rewrite +
+  discriminator matrix, `verifier-spec.md` §3, margins re-recorded in
+  `key-facts.md`.
+- Full re-validation per CLAUDE.md before any commit touching `tests/`:
+  regenerate cases → reference 32/32 → anti-cheat matrix →
+  `harbor run -a oracle` reward = 1.
+- The held identifiability maintainer note is folded into this redesign;
+  relocation of `tests/oracle/{flux,invert_ne}.py` to `authoring/` rides
+  the same commit series.
