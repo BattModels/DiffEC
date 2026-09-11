@@ -451,3 +451,59 @@ against the strongest graded agent.
 - The held identifiability maintainer note is folded into this redesign;
   relocation of `tests/oracle/{flux,invert_ne}.py` to `authoring/` rides
   the same commit series.
+
+## ADR-0014 — L3 (sparse velocity) rejected: identifiability collapse, not a basin trap
+
+**Status:** Accepted (2026-09-11) — L3 will NOT be implemented; the
+ADR-0013 L1+L2 package (through `3f60e58`) is the final v0.2 hardening.
+
+**Context.** ADR-0013 left L3 — bundling `v_data` at only a few
+x-stations to re-arm case_4's original multi-modal basin trap — as a
+stretch behind a feasibility gate. The hypothesis: dense v(x,t) is what
+makes the joint inverse nearly convex, so starving it should create a
+plausible positive-t⁺⁰ basin that captures single-start optimization
+from a literature-prior init (+0.30), penalizing search strategy rather
+than accuracy.
+
+**Feasibility experiment (2026-09-11, scratchpad `exp_l3_basin.py`).**
+Case_4; v restricted to x-station subsets {100 (control), 8, 5, 3, 0};
+joint inversion (reference machinery, K=10, λ_tp=1e-5) from inits
+t⁺⁰ ∈ {+0.30, +0.10, −0.10, −0.40}. Findings:
+
+1. **No multi-modality at any sparsity.** At every station count, all
+   four inits converge to the SAME solution (init-independent to ~1%).
+   There is no wrong basin that captures bad inits — the landscape
+   stays effectively unimodal.
+2. **Instead, the unique optimum drifts off-truth as v thins.**
+   Worst-point errors vs truth (any init): full → D 0.04 / t⁺⁰ 0.02
+   (passes); 8 stations → D 0.14 / t⁺⁰ 0.03 (D FAILS, worst mid-band
+   at c≈3.07, not an edge); 5 → D 0.12 / t⁺⁰ 0.19 (both fail;
+   t⁺⁰ overshoots to −0.44); 3 → D 0.47 / t⁺⁰ 0.29 (collapse,
+   t⁺⁰ ≈ 0 flat); c-only → D 0.14 / t⁺⁰ 0.046.
+3. **The off-truth optima are data-PREFERRED:** the fitted solutions'
+   pure data misfit is 0.55–0.92× the truth parameters' own misfit
+   under the same sparse loss. The gates would reject solutions that
+   fit the observable data strictly better than the ground truth does.
+
+**Decision.** Reject L3. Sparse velocity does not create a search
+problem (multi-start would rescue nothing — the global optimum itself
+is outside the gates); it destroys identifiability, so any difficulty
+gained would come entirely from grading against our specific curve in
+a regime the data no longer constrains — the "verifier accepts only
+the oracle's solution" anti-pattern in its strongest form, and worse
+for the reference than for agents (the reference solution class itself
+fails D at 8 stations).
+
+**Consequences.**
+- The v0.2 submission is the validated L1+L2 package (HEAD `3f60e58`):
+  de-scaffolded spec, mixed-regime case_4 with graded-label mask,
+  c_grid to 3.30, λ-ladder reference; 32/32, oracle-in-container 1.0,
+  Opus-5-xhigh mock evidence 1/2.
+- The June finding (basin trap absent under v-weighted joint fitting)
+  now has a converse: the trap cannot be re-armed by weakening the
+  v-channel either. Any future difficulty increase must come from new
+  physics scope (e.g. a different regime/chemistry case), not from
+  information starvation of the current cell.
+- Next actions: refresh harbor-task-format pin, mirror subtree to the
+  fork (PR #584), reviewer reply presenting the hardening + mock
+  evidence, request `/run trials=3`.
