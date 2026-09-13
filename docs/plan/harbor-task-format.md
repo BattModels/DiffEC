@@ -290,3 +290,20 @@ Review and iteration are post-deadline but no new PRs after.
 - [ ] Decide a kebab-case `<task-name>`. Candidates: `concentrated-electrolyte-transport`,
       `diffec-mass-transport`, `newman-inversion-from-operando`.
 - [ ] Sketch `task.toml` once the case design is locked.
+
+## 2026-09-13 re-check (README migration)
+
+Upstream v0.1.0 moved the three explanation fields out of `task.toml`
+`[metadata]` into README.md sections (`## Difficulty`, `## Reference
+solution`, `## Verification`) — Harbor Hub renders the task card from
+the README, so prose in task.toml reached nobody. Enforced by new
+`ci_checks/check-task-readme.sh` (byte-compares the generated managed
+header vs task.toml; requires the 3 sections non-empty; soft word caps
+400/300/600 — tables/code free). `check-canary.sh` now also covers
+README.md (canary must be line 1, inside an HTML comment).
+
+Applied 2026-09-13 with upstream `tools/task-readme/generate.py
+--migrate` run against the DiffEC subtree (tool + template obtained by
+merging upstream/main into the fork branch). Difficulty section prose
+refreshed for the ADR-0013 design while migrating. Verified:
+check-task-readme + check-canary pass on the migrated files.
