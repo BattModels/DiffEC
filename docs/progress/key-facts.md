@@ -334,7 +334,16 @@ N=100/dt=0.1 vs N=200/dt=0.05 (`docs/plan/_sens_exp/calib_final.json`):
 10 %): reference ratios 0.27 / 0.20 / 0.02 / 0.12 (cases 1–4); case 1's
 2.7 % deviation is dominated by the noise on `Q_data` itself
 (σ_c·√2/|Q| ≈ 2.6 %), i.e. the 10 % gate is ≈ 3.8σ. Existing checks
-unchanged (table below). 36/36 green; reference runtime +1.1–1.6 s/case.
+unchanged (table below). 36/36 green; reference runtime +1.1–1.6 s/case;
+containerized `harbor run -a oracle` reward 1.0 (8m15s, job
+`jobs/2026-09-24__23-43-56`).
+
+Negative tests (2026-09-24, reference output with the `sensitivity`
+block tampered): all-zero blocks, every block scaled by 0.5, and a
+non-causal memory kernel (entries after `t_qoi` filled with the last
+pre-plateau value) each fail exactly `test_sensitivity` on all 4 cases
+and nothing else (4 failed / 32 passed). The check cannot be passed by
+guessing, and it does not perturb the other checks.
 
 ### Gotcha: narrow hats on c_grid are not a gradable basis for D
 
