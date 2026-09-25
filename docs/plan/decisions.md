@@ -507,3 +507,96 @@ fails D at 8 stations).
 - Next actions: refresh harbor-task-format pin, mirror subtree to the
   fork (PR #584), reviewer reply presenting the hardening + mock
   evidence, request `/run trials=3`.
+
+## ADR-0015 — v0.3 hardening: graded adjoint sensitivities of the concentration polarization
+
+**Status:** Accepted (2026-09-24; user approval "record your decisions and
+do the implementation"; design rationale and experiments in
+`docs/plan/gradient-hardening-proposal.md`, experiment scripts/results in
+`docs/plan/_sens_exp/`).
+
+**Context.** After ADR-0013 (L1+L2) the task sits at ~1/2 for
+Opus-5-xhigh on n=2 mock trials and the reviewer still judges the pass rate
+high. ADR-0014 closed information starvation. Trajectory review of both
+mock trials and the reviewer pass shows every passing agent built a NumPy
+forward solver driven by `scipy.optimize.least_squares` (finite-difference
+Jacobians, zero autodiff): the "differentiable modeling" in the accepted
+proposal's title is never exercised. Haotian Chen (DiffEC first author)
+suggested grading gradient evaluation. DiffEC itself differentiates only
+the fit loss w.r.t. two parameters — ≈ 0 at convergence, ungradeable — so
+the graded gradient has to be of a physical quantity, chosen here.
+
+**Decision.** Add one graded deliverable: the **adjoint gradient of the
+end-of-plateau concentration polarization** with respect to every model
+input, evaluated on a canonical knot model at the agent's own recovered
+transport functions, verified truth-free.
+
+1. **QoI.** `Q = c(x[Nx−1], t_qoi) − c(x[0], t_qoi)` (mol/L) on the
+   bundled x grid, `t_qoi` = the last bundled time sample inside the
+   constant-current plateau (`params.json: t_qoi_s, t_qoi_index`).
+2. **Base point / knot model.** `c_knots[12]` uniform over
+   `[min c_data, max c_data]` (shipped in `params.json`). The agent reports
+   `D_knots[12]` (m²/s), `t_plus_0_knots[12]`; the knot model is linear
+   interpolation on `c_knots`, constant outside — the verifier's existing
+   evaluation rule, now stated for the extended grid.
+3. **Gradients** (total derivatives through the coupled c–v₀ evolution
+   of formalism §2): `dQ_dlnD[12]`, `dQ_dtp0[12]`, `dQ_di[Nt]` (current
+   program perturbed by 1 A/m² hats on the bundled `t` grid), `dQ_dc0[Nx]`
+   (initial concentration of one data cell; `v₀(x,0)` keeps the uniform
+   `c_init` expression). Plus `Q_pol` itself.
+4. **Verification (check #7, `test_sensitivity`).** Rebuild the knot model
+   from the agent's knot values, differentiate the held-out oracle with
+   `jax.value_and_grad`, and require per block
+   `max|agent − verifier| ≤ 0.25 · max|verifier|`; `|Q_pol − Q_verifier|
+   ≤ 0.10 |Q_verifier|`; and `|Q_verifier − Q_data| ≤ 0.10 |Q_data|` where
+   `Q_data` is the same difference read from `c_data` (base point must
+   reproduce the measured polarization). No oracle truth enters the
+   check, so its tolerance covers only discretization/implementation
+   differences (measured drift N=100→200 for the final definition,
+   `docs/plan/_sens_exp/calib_final.json`: ln D 2.5–11 %, t⁺⁰ ≤ 2.5 %,
+   i(t) ≤ 2.1 %, c₀ ≤ 0.6 % → 2.25× margin on the worst block, ≥ 8×
+   elsewhere).
+5. **Reference.** `solution/reference_solver.py` samples its fitted
+   functions at `c_knots` and runs `jax.jacrev` through its clean-room
+   `pde.py` on the knot model. Container images unchanged (JAX already
+   pinned in both).
+
+**Why this shape.** Reverse mode yields all `24 + Nt + Nx = 174`
+sensitivities in one backward pass (0.5 s/case on the oracle). Finite
+differences need 174 forward solves (≈ 3–5 min/case for the NumPy solvers
+seen in trials, on top of 27–50 min already used). The route is not
+forbidden — the accepted proposal promises method freedom — but the
+budget makes the differentiable route the practical one, and every
+gradient block has a textbook reading (which concentration window's D and
+t⁺⁰ control polarization; the cell's current-memory kernel with its
+causality cutoff; the adjoint state at t = 0).
+
+**Rejected alternatives.**
+- Grading vs. truth-evaluated sensitivities: gate-edge parameter error
+  shifts the ln D block 27–41 %, so a truth-based gate would test nothing.
+- Pointwise Jacobians on the 50-point `c_grid`: D-sensitivities to
+  0.0075 mol/L-wide hats drift 26–70 % under refinement (D enters through
+  a second derivative); not gradable.
+- Velocity QoIs (electrode face, mid-cell velocity, displacement): face
+  velocity is identically 0 by the flux BC; mid-cell gradients reduce to
+  the analytic direct term in t⁺⁰ with an ill-conditioned D part.
+- Fisher-information fraction (needs σ_c, σ_v published; 0.25 drift on
+  narrow hats): deferred, not in the baseline.
+- Posterior error bars: needs a canonical prior; ADR-0012-class ambiguity.
+
+**Consequences.**
+- `tests/oracle/sensitivity.py` (pure function) + `simulate(c0_override=)`
+  hook in `tests/oracle/solver.py`; `test_outputs.py::test_sensitivity`;
+  schema/declared-field checks extended (`c_knots`, `D_knots`,
+  `t_plus_0_knots`, `sensitivity{…}`); 9 tests × 4 cases = 36.
+- `case_gen`: `SENS_N_KNOTS = 12`; `params.json` gains `c_knots`,
+  `t_qoi_s`, `t_qoi_index`; `truth.npz` gains the same; formalism §1/§3/
+  §3.4/§5 and `instruction.md` updated; `data.h5` unchanged.
+- Docs same commit series: verifier-spec §6b, key-facts margins,
+  architecture, README (Difficulty/Reference/Verification), CLAUDE.md
+  check counts, pre-PR audit file list.
+- Full re-validation: regenerate → reference 36/36 → refinement
+  calibration of the final definition → `harbor run -a oracle` = 1 →
+  one cold Opus-5-xhigh mock trial → reviewer `/run`.
+- Difficulty knob left in reserve: a finer canonical time grid for
+  `dQ_di` raises the FD cost without touching the AD cost.
