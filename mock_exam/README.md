@@ -78,7 +78,7 @@ bash mock_exam/run_trial.sh gemini-cli  gemini-2.5-pro
 Each trial: single attempt, ~30 min budget. Output goes to
 `mock_exam/results/mock-<agent>__<timestamp>/`. The final
 `reward.txt` will be `1` if the agent's `transport.json` passes
-all 7 verifier checks × 4 cases, `0` otherwise.
+all 9 verifier tests × 4 cases, `0` otherwise.
 
 ## When to run this vs. the full pilot
 

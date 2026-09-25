@@ -41,6 +41,9 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 # ADR-0013: regime labels are graded only where the oracle's |t⁺⁰| clears
 # this sign-safety band. Quoted verbatim in formalism.md §4 — keep in sync.
 REGIME_MASK_MIN_ABS_TP0 = 0.03
+# ADR-0015: number of canonical sensitivity knots spanning the observed
+# concentration range. Quoted in formalism.md §1/§3.4 — keep in sync.
+SENS_N_KNOTS = 12
 TASK_ROOT = (
     REPO_ROOT
     / "tasks/physical-sciences/chemistry/concentrated-electrolyte-transport"
@@ -230,6 +233,31 @@ def generate_case(config_path: Path, verbose: bool = True) -> None:
         print(f"noise: sigma_c={sigma_c:.4g} mol/L, "
               f"sigma_v={sigma_v:.4g} nm/s ({100*float(noise['v_sigma_rel'])}% of max|v|)")
 
+    # ------------------------------------------------- sensitivity contract (ADR-0015)
+    # Knots span the *noisy* observed range (what the agent sees); the QoI
+    # time is the last bundled sample inside the constant-current plateau.
+    c_knots = np.linspace(
+        float(c_data.min()), float(c_data.max()), SENS_N_KNOTS, dtype=np.float64,
+    )
+    t_out_s = t_internal[t_indices]
+    plateau_end_s = float(i_t_knots[2])
+    t_qoi_index = int(np.max(np.where(t_out_s <= plateau_end_s + 1e-9)[0]))
+    t_qoi_s = float(t_out_s[t_qoi_index])
+    # Feasibility of the base-point rule (verifier requires the knot model
+    # to reproduce the measured polarization to 10 %): the noiseless
+    # simulation itself must sit well inside that.
+    Q_sim = float(c_sim_out[t_qoi_index, -1] - c_sim_out[t_qoi_index, 0])
+    Q_data = float(c_data[t_qoi_index, -1] - c_data[t_qoi_index, 0])
+    if abs(Q_sim - Q_data) > 0.05 * abs(Q_data):
+        raise RuntimeError(
+            f"{case_id}: noiseless polarization {Q_sim:.4f} vs measured "
+            f"{Q_data:.4f} differ by > 5 % — base-point rule infeasible"
+        )
+    if verbose:
+        print(f"sensitivity contract: c_knots [{c_knots[0]:.3f}, {c_knots[-1]:.3f}] "
+              f"x{SENS_N_KNOTS}, t_qoi = t[{t_qoi_index}] = {t_qoi_s:.1f} s, "
+              f"Q_sim = {Q_sim:.4f}, Q_data = {Q_data:.4f} mol/L")
+
     # ------------------------------------------------- c_grid + oracle values
     cgrid_cfg = cfg["c_grid"]
     c_grid = np.linspace(
@@ -322,6 +350,9 @@ def generate_case(config_path: Path, verbose: bool = True) -> None:
         "c_init": c_init,
         "c_grid": c_grid.tolist(),
         "flux_samples": [[float(x), float(t)] for x, t in zip(flux_x, flux_t)],
+        "c_knots": c_knots.tolist(),
+        "t_qoi_s": t_qoi_s,
+        "t_qoi_index": t_qoi_index,
         "factor_table": {
             "c_mol_per_L": factor_c.tolist(),
             "factor": factor_v.tolist(),
@@ -355,6 +386,10 @@ def generate_case(config_path: Path, verbose: bool = True) -> None:
         factor_v=factor_v,
         i_t_knots_s=i_t_knots,
         i_amp_A_per_cm2=i_amp_knots,
+        c_knots=c_knots,
+        t_out_s=t_out_s,
+        t_qoi_s=t_qoi_s,
+        t_qoi_index=t_qoi_index,
         seed=seed,
         config_hash=config_hash,
     )

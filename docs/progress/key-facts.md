@@ -311,6 +311,63 @@ Result: all 4 cases now pass 28/28 with regime labels matching
 Target aggregate band per ADR-0008: **10–20 %**.
 Failure-mode classification per agent goes in `docs/progress/pilot_run.md`.
 
+## ADR-0015 sensitivity check margins (2026-09-24, v0.3)
+
+Check #7 (`test_sensitivity`) is truth-free, so it has two distinct
+margins. (a) *Implementation* margin — reference (clean-room `pde.py`,
+`jax.value_and_grad`) vs the verifier's `oracle.sensitivity` at the same
+knot values, ratio of deviation to the 0.25·max|block| gate: ≤ 0.034
+(dQ_dlnD, case 3) and ≤ 4e-3 on every other block; Q_pol agreement ≤ 2e-3
+of its 10 % gate. (b) *Discretization* margin — the irreducible drift a
+correct solver on a different grid carries, measured on the oracle at
+N=100/dt=0.1 vs N=200/dt=0.05 (`docs/plan/_sens_exp/calib_final.json`):
+
+| Case | dQ_dlnD | dQ_dtp0 | dQ_di | dQ_dc0 |
+|---|---|---|---|---|
+| 1 | 0.025 | 0.008 | 0.018 | 0.001 |
+| 2 | 0.044 | 0.012 | 0.021 | 0.003 |
+| 3 | 0.042 | 0.009 | 0.016 | 0.002 |
+| 4 | 0.111 | 0.025 | 0.019 | 0.006 |
+
+→ the 0.25 gate holds 2.25× margin on the worst block (case 4 ln D) and
+≥ 8× elsewhere. Base-point rule (knot model must reproduce `Q_data` to
+10 %): reference ratios 0.27 / 0.20 / 0.02 / 0.12 (cases 1–4); case 1's
+2.7 % deviation is dominated by the noise on `Q_data` itself
+(σ_c·√2/|Q| ≈ 2.6 %), i.e. the 10 % gate is ≈ 3.8σ. Existing checks
+unchanged (table below). 36/36 green; reference runtime +1.1–1.6 s/case.
+
+### Gotcha: narrow hats on c_grid are not a gradable basis for D
+
+D enters through ∂/∂x(D φ ∂c/∂x). A hat perturbation 0.0075 mol/L wide
+(one c_grid spacing) produces mesh-dependent flux kinks: pointwise
+D-sensitivities drift 26–70 % under grid refinement, while t⁺⁰ (a source
+term) drifts ≤ 2 %. That is why the sensitivity contract lives on 12
+wide knots over the *whole observed* c-range and grades one integrated
+scalar, not the field Jacobian (`docs/plan/gradient-hardening-proposal.md` §3).
+
+### Gotcha: truth-based grading of sensitivities is impossible
+
+A solution sitting exactly on the D/t⁺⁰ gate edge (D×1.08, t⁺⁰+0.04)
+shifts dQ_dlnD by 27–41 % relative to truth. Check #7 therefore
+recomputes everything at the *agent's* knot values; the tolerance covers
+discretization only. Consequence for future edits: never add a
+sensitivity tolerance that references `truth.npz` values.
+
+### Gotcha: velocity is a poor QoI in this cell
+
+`v₀` at the x = L face is identically 0 (both electrode faces carry the
+same flux i/F, and v₀ = V̄·(i/F − F_face)); mid-cell velocity's t⁺⁰
+gradient is the analytic direct term −V̄ i/F·h_k(c_mid) with no PDE
+content, and its D gradient is ill-conditioned (133 % shift at the gate
+edge). Polarization `Q` is the QoI; velocity stays graded as a field.
+
+### Gotcha: the current-memory kernel must vanish after t_qoi
+
+`dQ_di[k]` for hats entirely after `t_qoi` is exactly 0 (causality). The
+hat straddling `t_qoi` is non-zero. A submission with non-zero entries
+beyond the plateau has differentiated the wrong quantity — the block
+tolerance catches it because the pre-plateau entries are O(1e-3–1e-2).
+
 ## ADR-0013 hardening margins (2026-09-09, post case_4 redesign)
 
 Reference-solution worst-point ratios vs tolerance (ratio < 1 = pass;

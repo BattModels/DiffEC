@@ -169,6 +169,39 @@ The verifier runs the **same** `oracle/solver.py` that generated the
 case; the agent's reported parameters either reproduce `v_data` or they
 don't. No room for argument.
 
+## 6b. Sensitivity check (`test_sensitivity`, ADR-0015, check #7)
+
+Truth-free. Inputs from the agent: `c_knots[12]` (identity-checked against
+`truth.npz`), `D_knots[12]` (m²/s), `t_plus_0_knots[12]`, and
+`sensitivity = {t_qoi_s, Q_pol, dQ_dlnD[12], dQ_dtp0[12], dQ_di[Nt],
+dQ_dc0[Nx]}`. The verifier calls
+`oracle.sensitivity.polarization_sensitivity` — the knot model (linear
+interpolation on `c_knots`, constant outside) integrated with the held-out
+solver, differentiated with `jax.value_and_grad` w.r.t. `ln D_knots`,
+`t_plus_0_knots`, the amplitudes of 1 A/m² hats on the bundled time grid
+added to `i_app(t)`, and the initial concentration of each cell
+(`simulate(c0_override=…)`; initial `v₀` keeps the uniform-`c_init` form).
+`Q = c(x[N−1], t_qoi) − c(x[0], t_qoi)` with `t_qoi = t[t_qoi_index]`, the
+last bundled sample inside the current plateau.
+
+Assertions, in order:
+1. `|Q_verifier − Q_data| ≤ 0.10 |Q_data|`, `Q_data` read from `c_data`
+   at `t_qoi_index` — the reported knot model must reproduce the measured
+   polarization (base-point sanity; noise on `Q_data` is ≤ 3 %).
+2. `|Q_pol − Q_verifier| ≤ 0.10 |Q_verifier|`.
+3. For each block `max|agent − verifier| ≤ 0.25 · max|verifier|`.
+
+Tolerance feasibility (`docs/plan/_sens_exp/calib_final.json`): drift of
+the oracle's own gradients between N=100/dt=0.1 and N=200/dt=0.05 is the
+only irreducible error a correct independent implementation carries; it
+is ≤ 11 % (ln D block, case 4) and ≤ 3 % (others), so the 25 % gate holds
+≥ 2.25× margin on the worst block and ≥ 8× elsewhere. Reference-solution ratios are recorded in `key-facts.md`.
+Grading against truth-evaluated sensitivities was rejected: a solution on
+the D/t⁺⁰ gate edge shifts the ln D block by 27–41 % (ADR-0015).
+
+Cost: one `value_and_grad` through the 11 000-step scan ≈ 0.5 s per case
+after a ~1.5 s compile.
+
 ## 7. Edge cases the verifier handles explicitly
 
 - **Missing `results/case_X/transport.json`:** that case's checks are reported as "no submission" (distinct from "failed").

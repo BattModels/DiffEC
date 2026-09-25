@@ -34,7 +34,7 @@ tasks/physical-sciences/chemistry/<task-name>/
 └── tests/                          # VERIFIER container build context (separate from agent)
     ├── Dockerfile                  # COPY . /tests/ ; pre-install pytest + JAX + oracle deps
     ├── test.sh                     # pytest wrapper → /logs/verifier/reward.txt
-    ├── test_outputs.py             # the 5 checks + self-consistency
+    ├── test_outputs.py             # the 5 checks + self-consistency + sensitivity (ADR-0015)
     ├── conftest.py                 # case parameterization + agent-output loader
     ├── oracle/                     # Python package — moving-frame solver, flux decomposition, NE inversion
     │   ├── __init__.py
@@ -83,6 +83,7 @@ The forward model. Pure JAX, fully `jit`-able, no I/O. Lives inside
 - `solver.simulate_ne(D_fn, tp0_NE_fn, ic, bc, …) → c` — lab-frame variant with `v₀ ≡ 0`, used both for case generation's NE field and for any verifier check that needs the lab-frame counterfactual.
 - `invert_ne.invert(c_data, D_fn) → tp0_NE_fn` — the canonical definition of `t⁺⁰_NE` (see `oracle-spec.md` §3).
 - `flux.decompose(D_fn, tp0_fn, c, v0, i, x, t, factor) → (J_diff, J_mig, J_conv)` — single source of truth for the decomposition convention (ADR-0003). Imported by `case_gen/` and `tests/test_outputs.py`; the agent must match the formulas in `instruction.md`.
+- `sensitivity.polarization_sensitivity(D_knots, tp0_knots, c_knots, …) → (Q_pol, dQ_dlnD, dQ_dtp0, dQ_di, dQ_dc0)` — adjoint gradient of the end-of-plateau polarization through `solver.simulate` (ADR-0015, formalism §3.4). Used only by the verifier's truth-free check #7; the reference solution reimplements it clean-room on `solution/pde.py`.
 
 The exact same Python package is imported by `case_gen/` to generate
 ground truth and by `tests/test_outputs.py` to verify — so the
@@ -107,7 +108,7 @@ Parameterization: `@pytest.mark.parametrize("case", ["case_1", …, "case_4"])`.
 
 The self-consistency check (#6) is the only one that re-invokes
 `tests/oracle/solver.py`. `test.sh` wraps pytest and writes a single
-integer to `/logs/verifier/reward.txt` (1 = all 20 checks pass, 0 = any
+integer to `/logs/verifier/reward.txt` (1 = all 36 tests pass, 0 = any
 fail). See `harbor-task-format.md` for the wrapper pattern.
 
 ### `tasks/.../solution/` (reference solution)
@@ -120,7 +121,7 @@ python "$DIR/reference_solver.py" --cases /root/data/cases --out /root/results
 The Python implementation is the differentiable JAX moving-frame solver
 + multi-start BFGS. It must:
 - run end-to-end on a fresh checkout in under 1 h,
-- pass all 5 checks on all 4 cases with the margin recorded in `docs/progress/key-facts.md`,
+- pass all 9 tests on all 4 cases with the margin recorded in `docs/progress/key-facts.md`,
 - be the proof that the task is solvable as designed (`harbor run -a oracle` must return reward = 1).
 
 It also serves as the reference implementation that frontier agents will

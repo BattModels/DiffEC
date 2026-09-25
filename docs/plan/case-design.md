@@ -44,6 +44,17 @@ family:
 - **Determinism:** `seed` per case feeds `numpy.random.default_rng`.
   Re-running case generation produces byte-identical `data.h5`,
   `params.json`, `formalism.md`, `truth.npz`.
+- **Sensitivity contract (ADR-0015, formalism §3.4):** `c_knots` = 12
+  uniform knots over the noisy observed range `[min c_data, max c_data]`;
+  `t_qoi` = last bundled time sample inside the current plateau
+  (`t[44] = 987.7 s` for all four cases). The graded QoI is the
+  polarization `Q = c(x[Nx−1], t_qoi) − c(x[0], t_qoi)`; the noiseless
+  `Q_sim` must match the measured `Q_data` to 5 % at generation time
+  (verifier gate 10 %). Per case (`c_knots` range, `Q_sim`, `Q_data`,
+  mol/L): case 1 [0.435, 0.772], −0.323, −0.314; case 2 [0.705, 1.799],
+  −1.071, −1.052; case 3 [0.630, 5.003], −4.308, −4.309; case 4
+  [2.033, 4.391], −2.339, −2.324. `data.h5` is unchanged by ADR-0015;
+  only `params.json`, `formalism.md`, `truth.npz` gained fields.
 
 ## Pinned case parameters (2026-06-26)
 

@@ -57,6 +57,7 @@ leak=$(echo "$agent_files" | grep -E "oracle_truth|/oracle/|truth\.npz")
 # ---------------------------------------------------------------------
 hdr 4 "Verifier (tests/) contains oracle + truth"
 for req in "tests/oracle/solver.py" "tests/oracle/flux.py" "tests/oracle/invert_ne.py" \
+           "tests/oracle/sensitivity.py" \
            "tests/test_outputs.py" "tests/test.sh" "tests/Dockerfile"; do
     if git ls-files "$TASK/$req" | grep -q .; then pass "$req present"; else fail "$req MISSING"; fi
 done
