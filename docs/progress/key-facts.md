@@ -345,6 +345,21 @@ pre-plateau value) each fail exactly `test_sensitivity` on all 4 cases
 and nothing else (4 failed / 32 passed). The check cannot be passed by
 guessing, and it does not perturb the other checks.
 
+### Mock-trial evidence on the v0.3 task (2026-09-25, n=1 each, cold, xhigh)
+
+| Agent | reward | agent time | cost | route for check #7 | worst margin (÷tol) |
+|---|---|---|---|---|---|
+| Fable 5.1 (`claude-fable-5-1`) | 1.0 | 31m47s | $5.76 | JAX solver, one `jax.grad(argnums=(0,1,2,3))` | case 4 D 0.40, t⁺⁰ 0.36 |
+| Opus 5.5 (`claude-opus-5-5`) | 1.0 | 15m34s | $2.33 | numba-batched FV solver, batched central FD (348 sims) | case 4 D 0.73, t⁺⁰ 0.80 |
+
+Both sensitivity blocks land ≤ 0.013 of the 25 % gate (same 100-cell
+grid as the verifier; the 11 % refinement drift is spatial). Lesson: a
+*batched* finite-difference solver makes the direction count a non-cost,
+so the "finer kernel grid" knob in the proposal would not bite. The
+deliverable grades the differentiable-modeling axis but does not lower
+the pass rate of the strongest models; case 4 D/t⁺⁰ accuracy remains the
+knife-edge axis (`mock_exam/results/mock-{fable51,opus55}-v03__20260925-*`).
+
 ### Gotcha: narrow hats on c_grid are not a gradable basis for D
 
 D enters through ∂/∂x(D φ ∂c/∂x). A hat perturbation 0.0075 mol/L wide
