@@ -114,13 +114,18 @@ cpus = 8                              # proposal: 4-8 cores
 memory_mb = 16384                     # proposal: 8-16 GB
 storage_mb = 10240
 gpus = 0
-allow_internet = true                 # proposal allows JAX install etc.
+network_mode = "public"               # agent phase: open internet (was allow_internet = true; see 2026-10-01)
+
+[verifier.environment]
+network_mode = "no-network"           # REQUIRED by check-allow-internet.sh (2026-10-01)
+cpus = 4
+memory_mb = 8192
 ```
 
 Fields to confirm against the latest upstream example before submitting:
-- Whether `allow_internet` is the right key (a newer Harbor version uses
-  `network_mode = "public"|"allowlist"|"no-network"` and `allowed_hosts`).
-  Trust the upstream example, not `harborframework.com`.
+- ~~Whether `allow_internet` is the right key~~ **RESOLVED 2026-10-01:
+  `network_mode = "public"` (legacy spelling only warns); see the
+  2026-10-01 re-check at the bottom.**
 - ~~Whether `relevant_experience` is required~~ **RESOLVED 2026-07-14:
   Required by CONTRIBUTING.md HEAD; added to `task.toml`.**
 
@@ -307,3 +312,38 @@ Applied 2026-09-13 with upstream `tools/task-readme/generate.py
 merging upstream/main into the fork branch). Difficulty section prose
 refreshed for the ADR-0013 design while migrating. Verified:
 check-task-readme + check-canary pass on the migrated files.
+
+## 2026-10-01 re-check (pre-push of v0.3 to PR #584)
+
+Upstream `main` at `cfff3077` (merged into the fork branch). Since the
+09-13 merge only CI config moved (`/run` trials now default to
+`claude-opus-5-5`; `/review` + `analyze` judge via `codex` on
+`gpt-5.6-sol`). No tree-layout change. Running **all 24** static checks
+from `ci_checks/` locally (not just the two run on 09-13) surfaced two
+task.toml drifts that CI would have failed on the next push:
+
+1. `check-task-fields.sh`: `[task]` now requires `authors = [{name, email}]`
+   and `keywords = [...]` (what `harbor publish` indexes on Harbor Hub;
+   `[metadata]` is sent as an unindexed blob). Added, mirroring
+   `[metadata]` author_name/author_email and tags.
+2. `check-allow-internet.sh`: a `separate` verifier must declare
+   `[verifier.environment] network_mode = "no-network"` (Harbor defaults
+   the verifier env to `public`). Added, together with `cpus = 4` /
+   `memory_mb = 8192` because `[verifier.environment]` is a full
+   `EnvironmentConfig` — when present it REPLACES the copy of the
+   top-level `[environment]` (Harbor 0.16.1 `VerifierConfig.environment`
+   docstring), so an entry with only `network_mode` would leave the
+   verifier container unconstrained/unspecified rather than at 4 CPU.
+   Same pattern as merged `hbv-calibration-1`. Verifier needs no egress:
+   `tests/Dockerfile` bakes every dependency; `test.sh` only runs pytest.
+3. Also replaced the deprecated `allow_internet = true` with
+   `network_mode = "public"` under `[environment]` (the check only WARNs
+   on the legacy spelling; Harbor 0.16.1 already models `network_mode`
+   on both tables — validated with its `TaskConfig`).
+
+`schema_version = "1.0"` kept (ADR-0010; template now shows "1.4" but CI
+does not enforce it and nothing in Harbor branches on it). After the
+edits: 24/24 static checks pass, 0 warnings; repo-level
+`check-rubric-consistency.py` PASS. `scripts/pre_pr_audit.sh` check #8
+updated: `[verifier.environment]` is no longer pilot-only; it now
+requires the `no-network` line and still blocks on `docker_image`.

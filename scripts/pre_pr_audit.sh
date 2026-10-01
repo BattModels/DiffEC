@@ -97,10 +97,16 @@ hdr 8 "PILOT-ONLY docker_image lines must be REVERTED before PR"
 if grep -q "^docker_image" "$TASK/task.toml"; then
     fail "task.toml still contains 'docker_image' line(s) — must remove before PR"
     grep -n "^docker_image\|PILOT-ONLY" "$TASK/task.toml" | while read l; do note "$l"; done
-elif grep -q "^\[verifier\.environment\]" "$TASK/task.toml"; then
-    fail "task.toml still contains [verifier.environment] section — must remove before PR"
 else
     pass "task.toml has no PILOT-ONLY docker_image lines"
+fi
+# Upstream (check-allow-internet.sh, 2026-10) REQUIRES [verifier.environment]
+# with network_mode = "no-network"; the section itself is no longer pilot-only.
+if awk '/^\[verifier\.environment\]/{p=1;next} /^\[/{p=0} p' "$TASK/task.toml" \
+        | grep -q '^network_mode = "no-network"'; then
+    pass "[verifier.environment] declares network_mode = \"no-network\""
+else
+    fail "[verifier.environment] must declare network_mode = \"no-network\" (upstream check-allow-internet.sh)"
 fi
 
 # ---------------------------------------------------------------------
