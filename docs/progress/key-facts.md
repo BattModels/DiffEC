@@ -468,3 +468,46 @@ noise, binds). All graded labels correct; its label-split disagreement
 with truth sits entirely inside the |t⁺⁰| < 0.03 mask. Agent spent 3.7 M
 input tokens / $4.58 / ~75 min vs 27 min for the 3.20-version pass.
 Mock evidence: 1/2 Opus-5-xhigh solves on the hardened task.
+
+### Label-boundary margins in cases 1 and 3 (2026-10-03, reviewer observation)
+
+Technical reviewer (approval at `6af11fa5`) noted that check #3 can be
+sharper than checks #1/#2 in two places: case 1's oracle
+|t⁺⁰ − t⁺⁰_NE| is 0.015–0.021 (0.029 below the 0.05 NE_valid/NE_deviates
+boundary), and case 3's oracle t⁺⁰_NE bottoms out at +0.024 (10 of 50
+points below 0.03, 26 below 0.04). Measured on every genuine solve we
+hold (reference, Opus 5 ×2, Fable 5.1, Opus 5.5, all `transport.json`):
+
+| solver | case 1 max gap (fails > 0.05) | case 3 min t⁺⁰_NE (fails ≤ 0) |
+|---|---|---|
+| reference | 0.026 | +0.023 |
+| Opus 5 (×2, 09-09) | 0.019 / 0.020 | +0.020 / +0.019 |
+| Fable 5.1 (09-25) | 0.020 | +0.020 |
+| Opus 5.5 (09-25, our mock) | 0.020 | +0.020 |
+| Opus 5.5 (10-03, reviewer `/run`, hub job 245f523d) | 0.020 | +0.024 |
+
+Every solver sits ≥ 1.9× inside the case-1 boundary and the case-3
+t⁺⁰_NE floor is pinned to +0.019…+0.024 by the data (the lab-frame
+inversion, not the agent's D error, sets it). Decision: no task change
+post-approval; the sharper effective tolerance is disclosed in
+formalism §4 and is the same design as case 4. A symmetric mask
+(`|t⁺⁰_NE| < 0.03` ungraded) would drop 10 case-3 labels for no
+observed benefit — recorded as a possible post-merge refinement only.
+
+## ADR-0016 internal-consistency checks (2026-10-16, checks #8–#9)
+
+Requested by the domain reviewer. Both truth-free; calibration on every
+output that carries knots (reference, Fable 5.1, our Opus 5.5 mock, the
+reviewer's Opus 5.5 `/run` of 10-03):
+
+| Check | worst observed | gate | margin |
+|---|---|---|---|
+| #8 labels == §4 rule on own t⁺⁰/t⁺⁰_NE | 0 mismatches, every solver; own numbers ≥ 0.020 from any boundary | exact | — |
+| #9 PWL knot model vs `D` on c_grid | 0.0095 rel (reference, case 2) | 0.05 rel | 5.3× |
+| #9 PWL knot model vs `t⁺⁰` on c_grid | 0.0135 abs (Fable 5.1, case 4) | 0.03 abs | 2.2× |
+
+Negative tests (reference output tampered): one label swapped at index 10
+→ `test_label_consistency` fails ×4 and `test_regime` only ×3 (index 10 is
+masked in case 4 — #8 catches what the oracle test cannot); `D_knots`
+×1.08 and `t_plus_0_knots` +0.05 → `test_knot_consistency` ×4 and
+`test_sensitivity` ×4 fail, nothing else. Reference 44/44 (10 s).

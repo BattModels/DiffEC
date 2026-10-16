@@ -121,7 +121,7 @@ python "$DIR/reference_solver.py" --cases /root/data/cases --out /root/results
 The Python implementation is the differentiable JAX moving-frame solver
 + multi-start BFGS. It must:
 - run end-to-end on a fresh checkout in under 1 h,
-- pass all 9 tests on all 4 cases with the margin recorded in `docs/progress/key-facts.md`,
+- pass all 11 tests on all 4 cases with the margin recorded in `docs/progress/key-facts.md`,
 - be the proof that the task is solvable as designed (`harbor run -a oracle` must return reward = 1).
 
 It also serves as the reference implementation that frontier agents will

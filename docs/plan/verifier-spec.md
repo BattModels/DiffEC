@@ -202,6 +202,28 @@ the D/t⁺⁰ gate edge shifts the ln D block by 27–41 % (ADR-0015).
 Cost: one `value_and_grad` through the 11 000-step scan ≈ 0.5 s per case
 after a ~1.5 s compile.
 
+## 6c. Internal-consistency checks (`test_label_consistency`, `test_knot_consistency`, ADR-0016, checks #8–#9)
+
+Both truth-free; requested by the domain reviewer (PR #584, 2026-10-16).
+
+- **#8 label consistency.** Recompute the §4 label from the agent's own
+  `t_plus_0` / `t_plus_0_NE` (`sign` mismatch → `NE_wrong_sign`; same sign
+  and `|gap| ≥ 0.05` → `NE_deviates`; else `NE_valid`) and require exact
+  equality with the submitted `regime` at all 50 points (no mask: this is
+  the agent's own arithmetic). Closes the "copy plausible labels without
+  doing the NE inversion" route.
+- **#9 knot consistency.** `np.interp(c_grid, c_knots, D_knots)` vs `D`
+  within 5 % relative, and the same for `t_plus_0_knots` vs `t_plus_0`
+  within 0.03 absolute, at all 50 points. The knot model is the §3.4
+  definition (PWL in c, constant outside), so no new convention is
+  introduced. Ties the graded sensitivities to the graded arrays.
+
+Tolerance feasibility (measured on the reference, Fable 5.1, our Opus 5.5
+mock, and the reviewer's Opus 5.5 `/run`; `key-facts.md`): PWL
+interpolation error between the 12 wide knots is ≤ 0.0095 relative on D
+and ≤ 0.0135 on t⁺⁰ → ≥ 5× and ≥ 2.2× margin. Every solver's own labels
+already satisfy #8, with its own numbers ≥ 0.020 from any boundary.
+
 ## 7. Edge cases the verifier handles explicitly
 
 - **Missing `results/case_X/transport.json`:** that case's checks are reported as "no submission" (distinct from "failed").

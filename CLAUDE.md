@@ -48,8 +48,8 @@ Ship a complete, mergeable Harbor task that:
    the 5–10 min/case CPU budget.
 
 **Success criteria:**
-- Reference solution passes all 9 verifier tests on all 4 cases on a fresh
-  4–8 CPU machine in under 1 hour total wall time (locally: 36/36 in ~11 min).
+- Reference solution passes all 11 verifier tests on all 4 cases on a fresh
+  4–8 CPU machine in under 1 hour total wall time (locally: 44/44 in ~11 min).
 - Frontier-agent pilot run (Claude Opus 4.7, GPT-5, Gemini 2.5) returns a
   solve rate in the proposal's 10–20 % target band.
 - PR opens cleanly against `harbor-framework/terminal-bench-science/main`,
@@ -83,6 +83,9 @@ Ship a complete, mergeable Harbor task that:
    solver, and requires each gradient block within 25 % of its max entry,
    `Q_pol` within 10 %, and the knot model to reproduce the measured
    polarization within 10 %. The differentiable-modeling axis of the task.
+8. Internal consistency (ADR-0016, truth-free): `regime` must equal the §4
+   rule applied to the agent's own `t⁺⁰`/`t⁺⁰_NE`; the knot model must
+   match the `D`/`t⁺⁰` arrays on c_grid (5 % / 0.03).
 
 ### The 4 cases (intended failure modes)
 - **Case 1 (NE-valid):** weak ion-solvent correlation; `t⁺⁰ > 0` everywhere; lab-frame agents pass.
@@ -226,7 +229,7 @@ Mostly local. The agent-side budget is laptop-scale by design.
 ## Definition of Done
 
 The task is mergeable when:
-1. The local verifier passes on all 4 cases against the reference solution, on a fresh checkout, in under 1 hour on 4–8 CPU cores: `RESULTS_DIR=./_local_results uv run pytest "$TASK/tests/test_outputs.py" -v` returns 36/36 green (9 tests × 4 cases).
+1. The local verifier passes on all 4 cases against the reference solution, on a fresh checkout, in under 1 hour on 4–8 CPU cores: `RESULTS_DIR=./_local_results uv run pytest "$TASK/tests/test_outputs.py" -v` returns 44/44 green (11 tests × 4 cases).
 2. `harbor run -p "$TASK" -a oracle` returns reward = 1.
 3. `docs/plan/case-design.md` documents each case's true parameter functions, noise level, concentration range, and the failure mode it is designed to catch — and the reference-solution margins on each check are recorded in `docs/progress/key-facts.md`.
 4. The bundled `environment/data/cases/case_X/` directories contain only what the agent should see; no leaked ground-truth files. The verifier image holds `tests/oracle_truth/` and `tests/oracle/` but never reaches the agent (Harbor's separate-container enforcement).

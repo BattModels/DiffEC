@@ -600,3 +600,32 @@ causality cutoff; the adjoint state at t = 0).
   one cold Opus-5-xhigh mock trial → reviewer `/run`.
 - Difficulty knob left in reserve: a finer canonical time grid for
   `dQ_di` raises the FD cost without touching the AD cost.
+
+## ADR-0016 — Internal-consistency checks: labels vs own t⁺⁰/t⁺⁰_NE, knots vs arrays
+
+**Status:** Accepted (2026-10-16; domain reviewer MrtinoRG requested both
+on PR #584 after the technical approval; user approved "Go ahead").
+
+**Context.** Check #3 graded `regime` only against the oracle, so labels
+could in principle be produced without the §4 arithmetic (and without the
+NE inversion) and still pass. Check #7 graded sensitivities of the knot
+model but nothing tied `D_knots`/`t_plus_0_knots` to the 50-point `D`/
+`t_plus_0` arrays graded by #1/#2, so the differentiable deliverable could
+belong to a different function than the graded answer.
+
+**Decision.** Add two truth-free checks (verifier-spec §6c): #8 exact
+equality of `regime` with the §4 rule applied to the agent's own arrays;
+#9 the §3.4 PWL knot model evaluated at `c_grid` within 5 % (D, relative)
+and 0.03 (t⁺⁰, absolute) of the arrays. Disclosed in formalism §5,
+instruction.md and README. No data, truth, or reference change.
+
+**Calibration.** Interpolation error of genuine smooth fits between the 12
+knots: ≤ 0.0095 (D) / ≤ 0.0135 (t⁺⁰) across reference + 3 cold trials
+with knots → ≥ 5× / ≥ 2.2× margin; all existing outputs pass #8 exactly.
+Tolerances are half or less of #1/#2 so #9 cannot be looser than the
+accuracy checks it supports.
+
+**Consequences.** 11 tests × 4 cases = 44; reference 44/44. Pass-rate
+impact expected nil for genuine solves (every trial we hold passes both);
+the checks only remove shortcut routes.
+
