@@ -106,7 +106,7 @@ timeout_sec = 600.0
 environment_mode = "separate"
 
 [agent]
-timeout_sec = 3600.0                  # 1 hour total = proposal's budget for 4 cases
+timeout_sec = 28800.0                 # 8 h: upstream check-task-timeout requires 28800 for every task (2026-10-21)
 
 [environment]
 build_timeout_sec = 600.0
@@ -191,8 +191,11 @@ Three separate timeout budgets (do not conflate):
 - `[agent] timeout_sec` — wall-time the agent has to produce outputs.
 - `[verifier] timeout_sec` — wall-time the verifier has to grade.
 
-For us: `[agent] timeout_sec = 3600` (1 h, matches the proposal's
-"< 1 hour total"); `[verifier] timeout_sec = 600` (the verifier's most
+For us: `[agent] timeout_sec = 28800` (8 h — set by the maintainer on the
+PR branch 2026-10-21, commit `13569bf8`, because `check-task-timeout.sh`
+now requires exactly 28800 for every task; the proposal's "< 1 hour total"
+remains the *expected* solve time, not the cap); `[verifier] timeout_sec
+= 600` (the verifier's most
 expensive check, #6 self-consistency, re-runs the forward solver four
 times — that's ~5–7 min total at our oracle step size).
 
@@ -347,3 +350,14 @@ edits: 24/24 static checks pass, 0 warnings; repo-level
 `check-rubric-consistency.py` PASS. `scripts/pre_pr_audit.sh` check #8
 updated: `[verifier.environment]` is no longer pilot-only; it now
 requires the `no-network` line and still blocks on `docker_image`.
+
+## 2026-10-21 re-check (maintainer commit on the PR branch)
+
+StevenDillmann (final reviewer) pushed `13569bf8` directly to
+`tb-sci-diffec-mass-transport`: `[agent] timeout_sec` 3600 → 28800,
+instruction.md closing sentence "You have 28800 seconds…", README
+"Agent budget | 8 hours". Upstream `a216a10a` made `check-task-timeout.sh`
+require the 8 h budget for every task (the 5 h authoring cap is gone) and
+moved `/run` + `/cheat` to Harbor Hub by default. Mirrored into DiffEC
+(`445a64b`); fork fast-forwarded. CI on `13569bf8` green.
+
