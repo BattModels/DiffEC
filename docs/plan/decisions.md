@@ -629,3 +629,33 @@ accuracy checks it supports.
 impact expected nil for genuine solves (every trial we hold passes both);
 the checks only remove shortcut routes.
 
+## ADR-0017 — Symmetric sign-safety mask on t⁺⁰_NE for regime grading
+
+**Status:** Accepted (2026-10-21; user chose option A after the 10-17
+reviewer `/run`).
+
+**Context.** ADR-0013 ungrades labels where the oracle's `|t⁺⁰| < 0.03`
+(sign change of the *true* transference number). The label also flips if
+the agent's *lab-frame* `t⁺⁰_NE` lands on the other side of zero. Case 3's
+oracle `t⁺⁰_NE` bottoms at +0.024 (indices 40–49 below 0.03). The technical
+reviewer flagged the exposure on 10-03; our 10-04 answer ("no trial has
+produced it", five solves at +0.019…+0.024) promised the symmetric mask
+"if a trial ever fails on that boundary". The 10-17 `/run` produced two
+gpt-6-astra solves whose case-3 `t⁺⁰_NE` fell to **+0.0064 / +0.0069**
+(spread 0.017 from the oracle) with D within 0.5–2 % and t⁺⁰ within 0.005
+— still a pass, but the trial judge scored Boundary Fairness 🔴 ("narrow
+pass inside the noise"). With ADR-0016 check #8 a flip is a hard fail.
+
+**Decision.** `regime_graded = |t⁺⁰_oracle| ≥ 0.03 ∧ |t⁺⁰_NE,oracle| ≥ 0.03`.
+Truth-only change (`truth.npz` `regime_graded`), disclosed in formalism §4,
+instruction.md, README. Cases 1, 2, 4 unaffected (oracle `t⁺⁰_NE` ≥ 0.117 /
+0.365 / 0.153); case 3 masks 10 points → 182/200 graded. Rejected: a 0.04
+band (26/50 case-3 points, hollows the check); regenerating case 3 with a
+higher `t⁺⁰_NE` floor (data change after two approvals, invalidates nine
+trials).
+
+**Calibration.** On the remaining graded points the gpt-6-astra solves'
+minimum `t⁺⁰_NE` is +0.016 / +0.017 (≈ 1× the observed spread above
+zero); Opus 5.5 / Fable / reference ≥ +0.031. Case 3's physics headline
+(deeply negative true `t⁺⁰`) is still enforced pointwise by check #2.
+

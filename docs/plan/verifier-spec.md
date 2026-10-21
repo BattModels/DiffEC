@@ -92,18 +92,22 @@ The oracle's `regime_oracle[50]` is computed from
 `truth.npz`. The verifier checks **exact match at every graded point**.
 
 **Grading mask (ADR-0013).** Also stored in `truth.npz` is
-`regime_graded[50]` = `|t⁺⁰_oracle| ≥ 0.03`
-(`case_gen/generate.REGIME_MASK_MIN_ABS_TP0`, quoted in `formalism.md`
-§4): grid points closer to a `t⁺⁰` sign change than the sign-safety
-band are excluded from label grading, so a case may span a regime
+`regime_graded[50]` = `|t⁺⁰_oracle| ≥ 0.03 ∧ |t⁺⁰_NE,oracle| ≥ 0.03`
+(`case_gen/generate.REGIME_MASK_MIN_ABS_TP0{,_NE}`, quoted in
+`formalism.md` §4): grid points where either the true `t⁺⁰` or the
+lab-frame `t⁺⁰_NE` is closer to a sign change than the sign-safety band
+are excluded from label grading (the `t⁺⁰_NE` half is ADR-0017: the
+agent's own NE inversion carries ~0.02 implementation spread, so a
+correct solve could flip the sign where the oracle sits at +0.024), so a case may span a regime
 transition (case_4's crossing at c* ≈ 3.02) without making the label
 check nondeterministic for near-perfect submissions. The agent is told
 the exclusion rule but not which points are masked. Truth files
 without the field grade all 50 points (backward compatibility).
-Current graded counts: 50/50/50/42 → 192 of 200 labels.
+Current graded counts: 50/50/40/42 → 182 of 200 labels (case 3 masks
+indices 40–49, where the oracle t⁺⁰_NE is 0.024–0.030).
 
 This is the categorical-pattern discriminator the proposal calls out:
-under any reasonable null model, 192 graded ternary labels are
+under any reasonable null model, 182 graded ternary labels are
 essentially impossible to satisfy by luck — and case_4's mixed-label
 block structure additionally requires *locating* the
 `NE_deviates → NE_wrong_sign` boundary to ~±0.03 mol/L in c, which

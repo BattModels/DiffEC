@@ -434,7 +434,8 @@ through the template, then `generate --all`.
 ### Regime mask (ADR-0013)
 
 `regime_graded = |t⁺⁰_oracle| ≥ 0.03` stored per case in `truth.npz`;
-verifier grades labels only there (graded counts 50/50/50/42 = 192/200).
+verifier grades labels only there (graded counts 50/50/50/42 = 192/200;
+50/50/40/42 = 182/200 after the ADR-0017 t⁺⁰_NE half of the mask).
 δ = 0.03 is ~2.7× the reference's t⁺⁰ error near the crossing (~0.011;
 its global worst 0.021 sits at the far c_grid endpoint, not near c*).
 The masked-band width is set by the truth slope at the crossing
@@ -511,3 +512,29 @@ Negative tests (reference output tampered): one label swapped at index 10
 masked in case 4 — #8 catches what the oracle test cannot); `D_knots`
 ×1.08 and `t_plus_0_knots` +0.05 → `test_knot_consistency` ×4 and
 `test_sensitivity` ×4 fail, nothing else. Reference 44/44 (10 s).
+
+## ADR-0017 symmetric t⁺⁰_NE mask (2026-10-21)
+
+Reviewer `/run` of 10-17 (4/4 pass) exposed the case-3 label boundary
+Allen flagged on 10-03: both gpt-6-astra solves had case-3 `t⁺⁰_NE`
+bottoming at **+0.0064 / +0.0069** (oracle +0.024; spread 0.017; 14
+points < 0.02, indices 41–49) with D within 0.5–2.3 % and t⁺⁰ within
+0.005; the trial judge scored Boundary Fairness 🔴 ("narrow pass inside
+the noise"). Opus 5.5 ×2: +0.025 (spread ≤ 0.004). Case-1 gap 0.020–0.021
+on all four.
+
+Fix: `regime_graded = |t⁺⁰| ≥ 0.03 ∧ |t⁺⁰_NE| ≥ 0.03` (oracle values).
+Effect: case 3 masks indices 40–49 (oracle t⁺⁰_NE 0.024–0.030) → graded
+50/50/40/42 = 182/200; cases 1/2/4 untouched (oracle t⁺⁰_NE ≥ 0.117 /
+0.365 / 0.153). Truth-only: case_3 `truth.npz` differs from HEAD in
+`regime_graded` alone (all float keys bit-identical); cases 1/2/4 truth
+unchanged; data.h5 restored byte-identical after the known 1e-13 regen
+drift. Residual exposure: on the remaining graded points the gpt solves'
+min `t⁺⁰_NE` is +0.016 / +0.017 (~1× observed spread); reference / Opus
+5.5 / Fable ≥ +0.031.
+
+Validation: reference 44/44; emulated agent (reference case-3 `t⁺⁰_NE`
+−0.03 at idx 40–49 → min −0.007, labels → NE_deviates there) fails
+`test_regime[case_3]` under the old truth and passes 44/44 under the new.
+Static checks 24/24 (after merging upstream `a216a10a`, which now
+requires the 8 h agent budget Steven set).

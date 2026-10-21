@@ -4,7 +4,7 @@
 > 2026-09-09 per ADR-0013** (v0.2 hardening: `t⁺⁰` sign crossing inside
 > the graded band + truth-side regime mask). All four cases pass 32/32
 > verifier checks with ≥ 2.7× margin on every continuous check, exact
-> regime match at every graded point (192 of 200 labels graded), and
+> regime match at every graded point (182 of 200 labels graded), and
 > ADR-0004 anti-cheat against the published Steinrück 2020 / DiffEC
 > paper fit. Calibration deltas vs the initial design are recorded in
 > "Calibration notes" at the bottom.

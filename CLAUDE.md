@@ -72,7 +72,8 @@ Ship a complete, mergeable Harbor task that:
 1. `|D_agent − D_oracle| / D_oracle ≤ 0.10` at every c_grid point.
 2. `|t⁺⁰_agent − t⁺⁰_oracle| ≤ 0.05` at every c_grid point.
 3. Exact match on the graded regime labels (points with oracle `|t⁺⁰| < 0.03`
-   are ungraded per ADR-0013; currently 192 of 200 graded).
+   are ungraded per ADR-0013, and points with oracle `|t⁺⁰_NE| < 0.03` per
+   ADR-0017; currently 182 of 200 graded).
 4. `||v_pred − v_data||₂ / max|v_data| ≤ 0.15`.
 5. Flux decomposition at 10 points: each component within `0.15 · |J_total_oracle|`.
 6. Self-consistency: verifier reruns its own moving-frame solver from the

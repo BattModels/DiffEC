@@ -41,6 +41,11 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 # ADR-0013: regime labels are graded only where the oracle's |t⁺⁰| clears
 # this sign-safety band. Quoted verbatim in formalism.md §4 — keep in sync.
 REGIME_MASK_MIN_ABS_TP0 = 0.03
+# ADR-0017: symmetric sign-safety band on the lab-frame t⁺⁰_NE as well —
+# the label also flips when an agent's own NE inversion lands on the other
+# side of zero, and implementation spread of that fit is ~0.02 (gpt-6-astra
+# trials, 2026-10-17: +0.007 where the oracle sits at +0.024).
+REGIME_MASK_MIN_ABS_TP0_NE = 0.03
 # ADR-0015: number of canonical sensitivity knots spanning the observed
 # concentration range. Quoted in formalism.md §1/§3.4 — keep in sync.
 SENS_N_KNOTS = 12
@@ -295,12 +300,16 @@ def generate_case(config_path: Path, verbose: bool = True) -> None:
          for i in range(c_grid.size)],
         dtype="U16",
     )
-    regime_graded = np.abs(tp0_oracle) >= REGIME_MASK_MIN_ABS_TP0
+    regime_graded = (
+        (np.abs(tp0_oracle) >= REGIME_MASK_MIN_ABS_TP0)
+        & (np.abs(tp0_NE_oracle) >= REGIME_MASK_MIN_ABS_TP0_NE)
+    )
     if verbose:
         from collections import Counter
         print(f"regime distribution: {dict(Counter(regime.tolist()))}")
         print(f"regime graded: {int(regime_graded.sum())}/{regime_graded.size} "
-              f"(mask |t⁺⁰| < {REGIME_MASK_MIN_ABS_TP0})")
+              f"(mask |t⁺⁰| < {REGIME_MASK_MIN_ABS_TP0} or "
+              f"|t⁺⁰_NE| < {REGIME_MASK_MIN_ABS_TP0_NE})")
 
     # ------------------------------------------------- flux samples
     flux_cfg = cfg["flux_samples"]
